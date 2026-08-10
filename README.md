@@ -1,6 +1,41 @@
 # Coding Interview Prep — Senior/Staff FAANG+ Reference
 
+Live site: **https://abhinnaagrawal.github.io/coding-practice/**
+
 Audience: 12+ YOE engineers prepping for coding rounds. Shareable — no personal context, just pattern reference.
+
+## How this repo is structured
+
+```
+coding-practice/
+├── README.md              this file — also the docsify homepage
+├── index.html              docsify loader (theme, search, copy-code, Python syntax highlighting)
+├── _sidebar.md             left-nav links, one entry per category doc
+├── .nojekyll               tells GitHub Pages to serve files as-is (skip Jekyll processing)
+└── 01-arrays-hashing.md … 19-design-data-structures.md
+                             one file per pattern/category
+```
+
+**Each category file (`0N-name.md`) follows the same four-section shape:**
+1. **When to recognize it** — the tell in a problem statement that signals this pattern.
+2. **Core idea** — the technique in a paragraph.
+3. **Gotchas** — where solutions actually break in practice (off-by-ones, edge cases, wrong invariants).
+4. **Problems table** — name, difficulty, company-frequency score (from a live dataset, see below), one-line description, and a one-line intuition — followed by a **Solutions** section with a commented Python implementation for every problem, in the same order as the table.
+
+Problems that recur across multiple categories (e.g. "Trapping Rain Water" fits both Two Pointers and DP) have their full solution written once in whichever category is most canonical for it, and every other occurrence cross-links to that file instead of duplicating code.
+
+## How it's hosted
+
+Static site, **GitHub Pages**, free tier:
+- No build step — [docsify](https://docsify.js.org/) renders the `.md` files client-side via CDN-loaded JS (`index.html` is the only "code" in this repo).
+- `_sidebar.md` drives the left-nav; `loadSidebar: true` in `index.html` wires it up.
+- Pages is configured to deploy from the `main` branch, root folder (Settings → Pages).
+- To update: edit a `.md` file, commit, push to `main` — Pages redeploys automatically within ~1 minute, no action needed.
+
+## How to add a new problem or category
+
+- **New problem in an existing category**: add a row to that file's problem table, then add a matching `### Problem Name` + \`\`\`python code block under its `## Solutions` section, same order as the table.
+- **New category**: copy the four-section shape from any existing file, add it to `_sidebar.md` and to the category table below.
 
 Data note: problem lists and frequency numbers below are pulled from the live dataset in `seanprashad/leetcode-patterns` (`src/data/questions.json`), snapshot dated **2026-08-02** — 179 problems, each tagged with real per-company interview-frequency counts (community-reported, not official LeetCode disclosure). Full source: [seanprashad.com/leetcode-patterns](https://seanprashad.com/leetcode-patterns/).
 
