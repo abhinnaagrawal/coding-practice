@@ -2,8 +2,6 @@
 
 Live site: **https://abhinnaagrawal.github.io/coding-practice/**
 
-Audience: 12+ YOE engineers prepping for coding rounds. Shareable — no personal context, just pattern reference.
-
 ## How this repo is structured
 
 ```
