@@ -20,6 +20,11 @@
       loadSidebar: true,
       subMaxLevel: 2,
       auto2top: true,
+      // loadSidebar looks for _sidebar.md relative to the current page's folder by default —
+      // alias every nested lookup back to the single root sidebar instead.
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'
+      },
       search: {
         maxAge: 86400000,
         paths: 'auto',
