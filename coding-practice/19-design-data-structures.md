@@ -1,4 +1,4 @@
-[← back to index](README.md)
+[← back to index](/coding-practice/README.md)
 
 # Design a Data Structure
 
@@ -30,7 +30,7 @@ Pick the data structure(s) whose native operation costs match the stated require
 ## Solutions
 
 ### LRU Cache
-See [06-linked-lists.md](06-linked-lists.md) — `OrderedDict` (or hashmap + doubly linked list) with move-to-end/evict-from-front.
+See [06-linked-lists.md](/coding-practice/06-linked-lists.md) — `OrderedDict` (or hashmap + doubly linked list) with move-to-end/evict-from-front.
 
 ### LFU Cache
 ```python
@@ -150,7 +150,7 @@ class RandomizedSet:
 ```
 
 ### Min Stack
-See [07-stacks-queues.md](07-stacks-queues.md) — store `(value, min_so_far)` pairs.
+See [07-stacks-queues.md](/coding-practice/07-stacks-queues.md) — store `(value, min_so_far)` pairs.
 
 ### Design Browser History
 ```python
@@ -174,10 +174,10 @@ class BrowserHistory:
 ```
 
 ### Time Based Key-Value Store
-See [05-binary-search.md](05-binary-search.md) — list of `(timestamp, value)` per key, binary searched.
+See [05-binary-search.md](/coding-practice/05-binary-search.md) — list of `(timestamp, value)` per key, binary searched.
 
 ### Find Median from Data Stream
-See [13-heaps-priority-queues.md](13-heaps-priority-queues.md) — two heaps kept balanced in size.
+See [13-heaps-priority-queues.md](/coding-practice/13-heaps-priority-queues.md) — two heaps kept balanced in size.
 
 ### Serialize and Deserialize Binary Tree
-See [09-trees-bst.md](09-trees-bst.md) — preorder DFS with a null sentinel.
+See [09-trees-bst.md](/coding-practice/09-trees-bst.md) — preorder DFS with a null sentinel.

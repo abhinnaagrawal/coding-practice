@@ -1,4 +1,4 @@
-[← back to index](README.md)
+[← back to index](/coding-practice/README.md)
 
 # Trie
 
@@ -122,7 +122,7 @@ def find_words(board, words):
 ```
 
 ### Word Break
-See [15-dynamic-programming.md](15-dynamic-programming.md) — the trie speeds up the dictionary-membership check in the DP transition.
+See [15-dynamic-programming.md](/coding-practice/15-dynamic-programming.md) — the trie speeds up the dictionary-membership check in the DP transition.
 
 ### Design Search Autocomplete System
 ```python

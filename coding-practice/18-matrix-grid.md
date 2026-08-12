@@ -1,9 +1,9 @@
-[← back to index](README.md)
+[← back to index](/coding-practice/README.md)
 
 # Matrix / Grid
 
 ## When to recognize it
-Input is explicitly a 2D grid/matrix, and the problem asks about traversal, transformation (rotate, in-place edits), or connectivity between cells (which overlaps with Graphs — see [10-graphs.md](10-graphs.md)).
+Input is explicitly a 2D grid/matrix, and the problem asks about traversal, transformation (rotate, in-place edits), or connectivity between cells (which overlaps with Graphs — see [10-graphs.md](/coding-practice/10-graphs.md)).
 
 ## Core idea
 Most grid problems reduce to careful index bookkeeping — rows/cols, boundaries, and (for traversal) treating each cell as a graph node with up to 4 (or 8) neighbors. In-place transformations (rotate, zero-out) usually have a clever swap or marker trick to avoid O(n²) extra space.
@@ -96,10 +96,10 @@ def set_zeroes(matrix):
 ```
 
 ### Word Search
-See [14-backtracking.md](14-backtracking.md) — DFS with temporary visited-marking and backtracking.
+See [14-backtracking.md](/coding-practice/14-backtracking.md) — DFS with temporary visited-marking and backtracking.
 
 ### Number of Islands
-See [10-graphs.md](10-graphs.md) — flood-fill DFS/BFS from every unvisited land cell.
+See [10-graphs.md](/coding-practice/10-graphs.md) — flood-fill DFS/BFS from every unvisited land cell.
 
 ### Search a 2D Matrix
-See [05-binary-search.md](05-binary-search.md) — binary search over the matrix treated as a flattened sorted array.
+See [05-binary-search.md](/coding-practice/05-binary-search.md) — binary search over the matrix treated as a flattened sorted array.

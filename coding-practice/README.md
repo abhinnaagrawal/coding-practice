@@ -38,25 +38,25 @@ Data note: problem lists and frequency numbers below are pulled from the live da
 
 | # | Category | Problems in dataset | Doc |
 |---|---|---|---|
-| 1 | Arrays & Hashing | 96 (Array) / 37 (Hash Table) | [01-arrays-hashing.md](01-arrays-hashing.md) |
-| 2 | String Manipulation | 39 | [02-string-manipulation.md](02-string-manipulation.md) |
-| 3 | Two Pointers | 27 | [03-two-pointers.md](03-two-pointers.md) |
-| 4 | Sliding Window | 13 | [04-sliding-window.md](04-sliding-window.md) |
-| 5 | Binary Search | 18 | [05-binary-search.md](05-binary-search.md) |
-| 6 | Linked Lists | 18 | [06-linked-lists.md](06-linked-lists.md) |
-| 7 | Stacks & Queues | 7 (Stack) | [07-stacks-queues.md](07-stacks-queues.md) |
-| 8 | Intervals & Greedy | 10 (Greedy) | [08-intervals-greedy.md](08-intervals-greedy.md) |
-| 9 | Trees & BSTs | 25 | [09-trees-bst.md](09-trees-bst.md) |
-| 10 | Graphs | 33 (DFS) / 24 (BFS) / 7 (Graph Theory) | [10-graphs.md](10-graphs.md) |
-| 11 | Topological Sort | 4 | [11-topological-sort.md](11-topological-sort.md) |
-| 12 | Union-Find | 4 | [12-union-find.md](12-union-find.md) |
-| 13 | Heaps & Priority Queues | 18 | [13-heaps-priority-queues.md](13-heaps-priority-queues.md) |
-| 14 | Backtracking | 23 | [14-backtracking.md](14-backtracking.md) |
-| 15 | Dynamic Programming | 30 | [15-dynamic-programming.md](15-dynamic-programming.md) |
-| 16 | Trie | 10 | [16-trie.md](16-trie.md) |
-| 17 | Bit Manipulation | 12 | [17-bit-manipulation.md](17-bit-manipulation.md) |
-| 18 | Matrix / Grid | 12 | [18-matrix-grid.md](18-matrix-grid.md) |
-| 19 | Design a Data Structure | 9 | [19-design-data-structures.md](19-design-data-structures.md) |
+| 1 | Arrays & Hashing | 96 (Array) / 37 (Hash Table) | [01-arrays-hashing.md](/coding-practice/01-arrays-hashing.md) |
+| 2 | String Manipulation | 39 | [02-string-manipulation.md](/coding-practice/02-string-manipulation.md) |
+| 3 | Two Pointers | 27 | [03-two-pointers.md](/coding-practice/03-two-pointers.md) |
+| 4 | Sliding Window | 13 | [04-sliding-window.md](/coding-practice/04-sliding-window.md) |
+| 5 | Binary Search | 18 | [05-binary-search.md](/coding-practice/05-binary-search.md) |
+| 6 | Linked Lists | 18 | [06-linked-lists.md](/coding-practice/06-linked-lists.md) |
+| 7 | Stacks & Queues | 7 (Stack) | [07-stacks-queues.md](/coding-practice/07-stacks-queues.md) |
+| 8 | Intervals & Greedy | 10 (Greedy) | [08-intervals-greedy.md](/coding-practice/08-intervals-greedy.md) |
+| 9 | Trees & BSTs | 25 | [09-trees-bst.md](/coding-practice/09-trees-bst.md) |
+| 10 | Graphs | 33 (DFS) / 24 (BFS) / 7 (Graph Theory) | [10-graphs.md](/coding-practice/10-graphs.md) |
+| 11 | Topological Sort | 4 | [11-topological-sort.md](/coding-practice/11-topological-sort.md) |
+| 12 | Union-Find | 4 | [12-union-find.md](/coding-practice/12-union-find.md) |
+| 13 | Heaps & Priority Queues | 18 | [13-heaps-priority-queues.md](/coding-practice/13-heaps-priority-queues.md) |
+| 14 | Backtracking | 23 | [14-backtracking.md](/coding-practice/14-backtracking.md) |
+| 15 | Dynamic Programming | 30 | [15-dynamic-programming.md](/coding-practice/15-dynamic-programming.md) |
+| 16 | Trie | 10 | [16-trie.md](/coding-practice/16-trie.md) |
+| 17 | Bit Manipulation | 12 | [17-bit-manipulation.md](/coding-practice/17-bit-manipulation.md) |
+| 18 | Matrix / Grid | 12 | [18-matrix-grid.md](/coding-practice/18-matrix-grid.md) |
+| 19 | Design a Data Structure | 9 | [19-design-data-structures.md](/coding-practice/19-design-data-structures.md) |
 
 Each doc has three sections: **when to recognize it** (the signal in the problem statement), **core idea** (how the technique works), **gotchas** (where it breaks in practice), and a **problem list** with one-line descriptions so you know what each problem is without re-reading it on LeetCode.
 

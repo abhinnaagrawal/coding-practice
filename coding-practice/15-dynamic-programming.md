@@ -1,4 +1,4 @@
-[← back to index](README.md)
+[← back to index](/coding-practice/README.md)
 
 # Dynamic Programming
 
@@ -39,13 +39,13 @@ Define a state (`dp[i]` or `dp[i][j]`) that captures "the answer to the subprobl
 ## Solutions
 
 ### Best Time to Buy and Sell Stock
-See [04-sliding-window.md](04-sliding-window.md) — track running min price, max profit = `price - minSoFar`.
+See [04-sliding-window.md](/coding-practice/04-sliding-window.md) — track running min price, max profit = `price - minSoFar`.
 
 ### Trapping Rain Water
-See [03-two-pointers.md](03-two-pointers.md) — two-pointer version; the DP version precomputes `leftMax`/`rightMax` arrays instead.
+See [03-two-pointers.md](/coding-practice/03-two-pointers.md) — two-pointer version; the DP version precomputes `leftMax`/`rightMax` arrays instead.
 
 ### Longest Palindromic Substring
-See [02-string-manipulation.md](02-string-manipulation.md) — expand-from-center (simpler and equally efficient to the 2D `dp[i][j]` formulation).
+See [02-string-manipulation.md](/coding-practice/02-string-manipulation.md) — expand-from-center (simpler and equally efficient to the 2D `dp[i][j]` formulation).
 
 ### Maximum Subarray
 ```python

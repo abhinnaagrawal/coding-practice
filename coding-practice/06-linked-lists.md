@@ -1,4 +1,4 @@
-[← back to index](README.md)
+[← back to index](/coding-practice/README.md)
 
 # Linked Lists
 

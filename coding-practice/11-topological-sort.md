@@ -1,4 +1,4 @@
-[← back to index](README.md)
+[← back to index](/coding-practice/README.md)
 
 # Topological Sort
 
@@ -24,7 +24,7 @@ Kahn's algorithm (BFS-based): repeatedly remove nodes with in-degree 0, decremen
 ## Solutions
 
 ### Course Schedule / Course Schedule II
-See [10-graphs.md](10-graphs.md) — both are Kahn's-algorithm (BFS topological sort) applications.
+See [10-graphs.md](/coding-practice/10-graphs.md) — both are Kahn's-algorithm (BFS topological sort) applications.
 
 ### Alien Dictionary
 ```python

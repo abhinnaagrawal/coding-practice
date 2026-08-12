@@ -1,4 +1,4 @@
-[← back to index](README.md)
+[← back to index](/coding-practice/README.md)
 
 # Heaps & Priority Queues
 
@@ -29,16 +29,16 @@ A heap keeps the min (or max) accessible in O(1), with O(log n) insert/remove �
 ## Solutions
 
 ### Top K Frequent Elements
-See [01-arrays-hashing.md](01-arrays-hashing.md) — `heapq.nlargest` over a frequency Counter.
+See [01-arrays-hashing.md](/coding-practice/01-arrays-hashing.md) — `heapq.nlargest` over a frequency Counter.
 
 ### Meeting Rooms II
-See [08-intervals-greedy.md](08-intervals-greedy.md) — min-heap of end times.
+See [08-intervals-greedy.md](/coding-practice/08-intervals-greedy.md) — min-heap of end times.
 
 ### Sliding Window Maximum
-See [04-sliding-window.md](04-sliding-window.md) — monotonic deque (the standard approach; a heap with lazy deletion also works but is less clean).
+See [04-sliding-window.md](/coding-practice/04-sliding-window.md) — monotonic deque (the standard approach; a heap with lazy deletion also works but is less clean).
 
 ### Merge k Sorted Lists
-See [06-linked-lists.md](06-linked-lists.md) — min-heap of each list's current head.
+See [06-linked-lists.md](/coding-practice/06-linked-lists.md) — min-heap of each list's current head.
 
 ### Kth Largest Element in an Array
 ```python

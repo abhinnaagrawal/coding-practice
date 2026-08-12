@@ -1,4 +1,4 @@
-[← back to index](README.md)
+[← back to index](/coding-practice/README.md)
 
 # Backtracking
 
@@ -54,7 +54,7 @@ def letter_combinations(digits):
 ```
 
 ### Generate Parentheses
-See [07-stacks-queues.md](07-stacks-queues.md) — backtracking tracking open/close counts.
+See [07-stacks-queues.md](/coding-practice/07-stacks-queues.md) — backtracking tracking open/close counts.
 
 ### Subsets
 ```python
