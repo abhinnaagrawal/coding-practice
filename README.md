@@ -6,8 +6,8 @@ Personal reference site — one docsify deployment, multiple content sections. P
 
 ## Sections
 
-- **[Coding Practice](coding-practice/README.md)** — senior/staff FAANG+ coding interview pattern reference: 19 categories, each with recognition signals, gotchas, a company-frequency-ranked problem list, and commented Python solutions.
-- **[Book Summaries](book-summaries/README.md)** — lesson-style notes working through technical books.
+- **[Coding Practice](/coding-practice/README.md)** — senior/staff FAANG+ coding interview pattern reference: 19 categories, each with recognition signals, gotchas, a company-frequency-ranked problem list, and commented Python solutions.
+- **[Book Summaries](/book-summaries/README.md)** — lesson-style notes working through technical books.
 
 ## How this repo is structured
 
