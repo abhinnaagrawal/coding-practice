@@ -1,7 +1,7 @@
 # Coding Interview Prep — Senior/Staff FAANG+ Reference
 
 Live site: **https://abhinnaagrawal.github.io/coding-practice/#/coding-practice/**
-Top-level site: [../README.md](../README.md)
+Top-level site: [Home](/README.md)
 
 ## How this section is structured
 
@@ -27,7 +27,7 @@ Problems that recur across multiple categories (e.g. "Trapping Rain Water" fits 
 - **New problem in an existing category**: add a row to that file's problem table, then add a matching `### Problem Name` + \`\`\`python code block under its `## Solutions` section, same order as the table.
 - **New category**: copy the four-section shape from any existing file, add it to `_sidebar.md` (repo root) and to the category table below.
 
-For hosting mechanics (docsify, GitHub Pages, how updates deploy), see [../README.md](../README.md).
+For hosting mechanics (docsify, GitHub Pages, how updates deploy), see [Home](/README.md).
 
 Data note: problem lists and frequency numbers below are pulled from the live dataset in `seanprashad/leetcode-patterns` (`src/data/questions.json`), snapshot dated **2026-08-02** — 179 problems, each tagged with real per-company interview-frequency counts (community-reported, not official LeetCode disclosure). Full source: [seanprashad.com/leetcode-patterns](https://seanprashad.com/leetcode-patterns/).
 

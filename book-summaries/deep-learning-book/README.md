@@ -1,6 +1,6 @@
 # Deep Learning (Goodfellow, Bengio, Courville) — Lesson Notes
 
-Top-level site: [../../README.md](../../README.md)
+Top-level site: [Home](/README.md)
 
 Lesson-by-lesson notes working through the book, written as original explanations rather than excerpts — each lesson builds on the previous one.
 

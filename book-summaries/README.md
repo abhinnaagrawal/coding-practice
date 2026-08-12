@@ -1,6 +1,6 @@
 # Book Summaries
 
-Top-level site: [../README.md](../README.md)
+Top-level site: [Home](/README.md)
 
 Lesson-style notes working through technical books, one subfolder per book.
 
