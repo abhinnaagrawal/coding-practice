@@ -27,15 +27,15 @@ Source: structured around the official [Python 3 tutorial](https://docs.python.o
 
 | # | Chapter | What you get |
 |---|---------|--------------|
-| 1 | [Setup, REPL & Running Code](01-setup-and-running-code.md) | Interpreter vs compiled, scripts, venv/pip (≈ Maven), `__main__` |
-| 2 | [Types, Variables & Operators](02-types-variables-operators.md) | Dynamic typing, mutability model, `==` vs `is`, truthiness |
-| 3 | [Core Data Structures](03-core-data-structures.md) | list / tuple / dict / set, slicing, comprehensions, complexity table |
-| 4 | [Control Flow & Functions](04-control-flow-and-functions.md) | Loops, `enumerate`/`zip`, args/kwargs, mutable default args, scope |
-| 5 | [OOP in Python](05-oop-in-python.md) | Classes vs Java, `self`, dunder methods, inheritance, duck typing, dataclasses |
-| 6 | [Strings, Files & Generators](06-strings-files-generators.md) | Interview string methods, file I/O, `yield`, `itertools` |
-| 7 | [Exceptions, Modules & Stdlib](07-exceptions-modules-stdlib.md) | try/except vs Java, imports, `collections` / `heapq` / `bisect` |
-| 8 | [Idioms, Gotchas & Interview Playbook](08-idioms-gotchas-interview-playbook.md) | Top-20 gotchas, copy semantics, live-coding playbook |
-| 9 | [Advanced: Decorators, Context Managers & Typing](09-advanced-decorators-context-managers-typing.md) | Nice-to-have depth for senior rounds |
+| 1 | [Setup, REPL & Running Code](/python-tutorial/01-setup-and-running-code.md) | Interpreter vs compiled, scripts, venv/pip (≈ Maven), `__main__` |
+| 2 | [Types, Variables & Operators](/python-tutorial/02-types-variables-operators.md) | Dynamic typing, mutability model, `==` vs `is`, truthiness |
+| 3 | [Core Data Structures](/python-tutorial/03-core-data-structures.md) | list / tuple / dict / set, slicing, comprehensions, complexity table |
+| 4 | [Control Flow & Functions](/python-tutorial/04-control-flow-and-functions.md) | Loops, `enumerate`/`zip`, args/kwargs, mutable default args, scope |
+| 5 | [OOP in Python](/python-tutorial/05-oop-in-python.md) | Classes vs Java, `self`, dunder methods, inheritance, duck typing, dataclasses |
+| 6 | [Strings, Files & Generators](/python-tutorial/06-strings-files-generators.md) | Interview string methods, file I/O, `yield`, `itertools` |
+| 7 | [Exceptions, Modules & Stdlib](/python-tutorial/07-exceptions-modules-stdlib.md) | try/except vs Java, imports, `collections` / `heapq` / `bisect` |
+| 8 | [Idioms, Gotchas & Interview Playbook](/python-tutorial/08-idioms-gotchas-interview-playbook.md) | Top-20 gotchas, copy semantics, live-coding playbook |
+| 9 | [Advanced: Decorators, Context Managers & Typing](/python-tutorial/09-advanced-decorators-context-managers-typing.md) | Nice-to-have depth for senior rounds |
 
 ## The five things that will bite you coming from C/Java
 If you remember nothing else on day one:
