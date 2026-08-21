@@ -7,6 +7,7 @@ Personal reference site — one docsify deployment, multiple content sections. P
 ## Sections
 
 - **[Coding Practice](/coding-practice/README.md)** — senior/staff FAANG+ coding interview pattern reference: 19 categories, each with recognition signals, gotchas, a company-frequency-ranked problem list, and commented Python solutions.
+- **[Python Tutorial](/python-tutorial/README.md)** — Python in one day for C/Java/Bash engineers: 9 chapters framed as diffs against what you already know, interview-first ordering, gotcha checklists, and micro-exercises per chapter.
 - **[Book Summaries](/book-summaries/README.md)** — lesson-style notes working through technical books.
 
 ## How this repo is structured
@@ -19,6 +20,8 @@ Personal reference site — one docsify deployment, multiple content sections. P
 ├── .nojekyll                  tells GitHub Pages to serve files as-is (skip Jekyll processing)
 ├── coding-practice/            section: interview prep (see coding-practice/README.md)
 │   └── 01-arrays-hashing.md … 19-design-data-structures.md
+├── python-tutorial/            section: Python in one day (see python-tutorial/README.md)
+│   └── 01-setup-and-running-code.md … 09-advanced-decorators-context-managers-typing.md
 └── book-summaries/             section: book notes (see book-summaries/README.md)
     └── deep-learning-book/
         └── 01-introduction.md … 06-machine-learning-basics-part2.md

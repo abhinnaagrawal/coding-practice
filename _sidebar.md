@@ -22,6 +22,18 @@
   - [18. Matrix / Grid](coding-practice/18-matrix-grid.md)
   - [19. Design Data Structures](coding-practice/19-design-data-structures.md)
 
+- Python Tutorial
+  - [Overview](python-tutorial/README.md)
+  - [01. Setup, REPL & Running Code](python-tutorial/01-setup-and-running-code.md)
+  - [02. Types, Variables & Operators](python-tutorial/02-types-variables-operators.md)
+  - [03. Core Data Structures](python-tutorial/03-core-data-structures.md)
+  - [04. Control Flow & Functions](python-tutorial/04-control-flow-and-functions.md)
+  - [05. OOP in Python](python-tutorial/05-oop-in-python.md)
+  - [06. Strings, Files & Generators](python-tutorial/06-strings-files-generators.md)
+  - [07. Exceptions, Modules & Stdlib](python-tutorial/07-exceptions-modules-stdlib.md)
+  - [08. Idioms, Gotchas & Interview Playbook](python-tutorial/08-idioms-gotchas-interview-playbook.md)
+  - [09. Advanced: Decorators, Context Managers & Typing](python-tutorial/09-advanced-decorators-context-managers-typing.md)
+
 - Book Summaries
   - [Overview](book-summaries/README.md)
   - Deep Learning (Goodfellow et al.)
