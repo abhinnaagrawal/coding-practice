@@ -127,7 +127,8 @@ The trade: Python buys you 2–3× coding speed at the cost of the compiler. The
 
 ## Exercises
 
-1. Spot the three bugs:
+**1.** Spot the three bugs:
+
 ```python
 def dedupe_adjacent(items, result=[]):
     for x in items:
@@ -135,21 +136,27 @@ def dedupe_adjacent(items, result=[]):
             result.append(x)
     return result
 ```
-2. Fix this max-heap usage and explain the bug:
+
+**2.** Fix this max-heap usage and explain the bug:
+
 ```python
 h = []
 for x in [3, 1, 4]:
     heapq.heappush(h, x)
 largest = heapq.heappop(h)
 ```
-3. Write a one-line function `has_pair_with_sum(nums, target)` using a set.
+
+**3.** Write a one-line function `has_pair_with_sum(nums, target)` using a set.
 
 <details>
 <summary><b>Solutions</b></summary>
 
-1. (a) mutable default `result=[]` shared across calls; (b) `x not in result` is O(n) per lookup → O(n²) overall — use a `set` for membership; (c) subtle: with the default fixed but no set, "dedupe adjacent" doesn't match the code — the code dedupes globally, so the name/spec lies. Interview lesson: code, name, and spec must agree.
-2. heapq pops the *minimum* — `largest` gets 1. Fix: push `-x` and negate on pop, or use `heapq.nlargest(1, ...)`.
-3. 
+**1.** (a) mutable default `result=[]` shared across calls; (b) `x not in result` is O(n) per lookup → O(n²) overall — use a `set` for membership; (c) subtle: with the default fixed but no set, "dedupe adjacent" doesn't match the code — the code dedupes globally, so the name/spec lies. Interview lesson: code, name, and spec must agree.
+
+**2.** heapq pops the *minimum* — `largest` gets 1. Fix: push `-x` and negate on pop, or use `heapq.nlargest(1, ...)`.
+
+**3.**
+
 ```python
 def has_pair_with_sum(nums, target):
     seen = set()

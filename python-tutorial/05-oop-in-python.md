@@ -193,7 +193,8 @@ One decorator generates `__init__`, `__repr__`, and `__eq__`. Options: `@datacla
 <details>
 <summary><b>Solutions</b></summary>
 
-1. 
+**1.**
+
 ```python
 class MinStack:
     def __init__(self):
@@ -215,7 +216,8 @@ class MinStack:
         return self._mins[-1]
 ```
 
-2. 
+**2.**
+
 ```python
 from dataclasses import dataclass
 
@@ -229,7 +231,8 @@ hand = {Card("A", "S"), Card("A", "S"), Card("T", "H")}   # set dedupes: 2 eleme
 sorted(hand, key=lambda c: RANKS[c.rank])
 ```
 
-3. 
+**3.**
+
 ```python
 class Deck:
     def __init__(self, cards):
@@ -239,6 +242,7 @@ class Deck:
     def __getitem__(self, i):
         return self._cards[i]
 ```
+
 `random.choice` works because it only needs `len()` and integer indexing — duck typing via the sequence protocol. No inheritance, no interface.
 
 </details>

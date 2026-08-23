@@ -136,8 +136,10 @@ groupby("aaabbbcca")       # groups of equal CONSECUTIVE items: a×3, b×3, c×2
 <details>
 <summary><b>Solutions</b></summary>
 
-1. `sorted(s1) == sorted(s2)`
-2. 
+**1.** `sorted(s1) == sorted(s2)`
+
+**2.**
+
 ```python
 def fib():
     a, b = 0, 1
@@ -149,11 +151,13 @@ from itertools import islice
 print(list(islice(fib(), 10)))   # islice takes the first n from an infinite generator
 ```
 
-3. 
+**3.**
+
 ```python
 from itertools import groupby
 [f"{ch}{len(list(g))}" for ch, g in groupby("aabbccccdddeee")]
 ```
+
 (the inner `list(g)` is needed because the group iterator is lazy)
 
 </details>

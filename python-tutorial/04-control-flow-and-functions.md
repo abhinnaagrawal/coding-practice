@@ -148,9 +148,11 @@ This nested-helper pattern is the standard shape of Python tree/graph interview 
 
 ## Exercises
 
-1. Write `fizzbuzz(n)` returning a list of strings ("FizzBuzz" for 15, etc.) — with a comprehension if you can.
-2. Write a function `flatten(nested)` using a nested recursive helper and closure (no `global`), e.g. `flatten([1,[2,[3]],4]) → [1,2,3,4]`.
-3. Predict, then verify: what does this print?
+**1.** Write `fizzbuzz(n)` returning a list of strings ("FizzBuzz" for 15, etc.) — with a comprehension if you can.
+
+**2.** Write a function `flatten(nested)` using a nested recursive helper and closure (no `global`), e.g. `flatten([1,[2,[3]],4]) → [1,2,3,4]`.
+
+**3.** Predict, then verify: what does this print?
 
 ```python
 funcs = [lambda: i for i in range(3)]
@@ -160,14 +162,16 @@ print([f() for f in funcs])
 <details>
 <summary><b>Solutions</b></summary>
 
-1. 
+**1.**
+
 ```python
 def fizzbuzz(n):
     return ["FizzBuzz" if i % 15 == 0 else "Fizz" if i % 3 == 0
             else "Buzz" if i % 5 == 0 else str(i) for i in range(1, n + 1)]
 ```
 
-2. 
+**2.**
+
 ```python
 def flatten(nested):
     out = []
@@ -181,6 +185,6 @@ def flatten(nested):
     return out
 ```
 
-3. `[2, 2, 2]` — all lambdas read the final value of `i`. Fix: `lambda i=i: i`.
+**3.** `[2, 2, 2]` — all lambdas read the final value of `i`. Fix: `lambda i=i: i`.
 
 </details>

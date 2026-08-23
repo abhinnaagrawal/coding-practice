@@ -154,14 +154,16 @@ def fib(n):
 <details>
 <summary><b>Solutions</b></summary>
 
-1. 
+**1.**
+
 ```python
 def top_k(nums, k):
     return [x for x, _ in Counter(nums).most_common(k)]
     # heapq version: heapq.nlargest(k, Counter(nums), key=Counter(nums).get)
 ```
 
-2. 
+**2.**
+
 ```python
 import heapq
 from itertools import count
@@ -175,9 +177,11 @@ def merge_k_sorted(lists):
         result.append(heapq.heappop(heap)[0])
     return result
 ```
+
 The counter prevents Python from comparing payloads when priorities tie. Here values are ints so it's defensive, but if payload were a list/node object, ties without a tiebreaker raise `TypeError`. (For real k-way merge, push per-list iterators: `(val, tie, iterator)` and push the next element on each pop.)
 
-3. 
+**3.**
+
 ```python
 from functools import lru_cache
 
@@ -185,6 +189,7 @@ from functools import lru_cache
 def climb_stairs(n):
     return n if n <= 2 else climb_stairs(n - 1) + climb_stairs(n - 2)
 ```
+
 Before: O(2ⁿ) time. After: O(n) time, O(n) space — each distinct n computed once.
 
 </details>

@@ -182,7 +182,8 @@ match command.split():
 <details>
 <summary><b>Solutions</b></summary>
 
-1. 
+**1.**
+
 ```python
 import functools
 
@@ -195,7 +196,8 @@ def count_calls(func):
     return wrapper
 ```
 
-2. 
+**2.**
+
 ```python
 class suppress:
     def __init__(self, *exc_types):
@@ -209,7 +211,8 @@ class suppress:
         # truthy return = suppress matching exceptions
 ```
 
-3. 
+**3.**
+
 ```python
 def qualifying_names(pairs: list[tuple[str, int]], threshold: int) -> list[str]:
     return [name for name, score in pairs if score >= threshold]
