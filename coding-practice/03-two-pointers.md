@@ -92,6 +92,35 @@ def max_area(height):
     return best
 ```
 
+### Longest Palindromic Substring
+```python
+def longest_palindrome(s):
+    if not s:
+        return ""
+
+    start, max_len = 0, 0
+
+    def expand(l, r):
+        while l >= 0 and r < len(s) and s[l] == s[r]:
+            l -= 1
+            r += 1
+        # palindrome is s[l+1:r], length is (r - 1) - (l + 1) + 1 = r - l - 1
+        return l + 1, r - l - 1
+
+    for i in range(len(s)):
+        # Odd length (center at i)
+        l1, len1 = expand(i, i)
+        if len1 > max_len:
+            start, max_len = l1, len1
+
+        # Even length (center between i and i+1)
+        l2, len2 = expand(i, i + 1)
+        if len2 > max_len:
+            start, max_len = l2, len2
+
+    return s[start : start + max_len]
+```
+
 ### Rotate Array
 ```python
 def rotate_array(nums, k):
