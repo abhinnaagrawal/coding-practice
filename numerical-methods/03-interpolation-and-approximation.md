@@ -91,6 +91,28 @@ Why squared error? It makes the problem *linear* (normal equations), it penalize
 
 Interpolation (Lagrange), root finding (Newton fits a line), integration (Simpson fits a parabola, day 5), ODE solvers (RK fits a 4th-order model, day 6) — the whole field is "model the function locally as a polynomial of degree k; the error is the k+1-th Taylor term you dropped." Keep this lens; it makes the next four days click.
 
+## Where it's used
+
+- **Fonts & vector graphics**: TrueType glyphs are quadratic Bézier splines; PostScript/OTF use cubics. "Smooth curve through control points" = day-3 spline, rendered millions of times per screen.
+- **Image resizing**: bilinear/bicubic interpolation — bicubic is a local cubic spline in 2-D; the ringing you see on sharp edges is a 1-pixel Runge phenomenon.
+- **CAD / animation**: keyframe easing and NURBS surfaces are piecewise-polynomial interpolation with C² continuity constraints.
+- **Sensor & telemetry pipelines**: resampling uneven measurements onto a regular grid; least-squares denoising before feature extraction.
+- **ML**: regression *is* least squares; feature scaling before fitting is conditioning repair (day 4); overfitting a high-degree polynomial to noisy data is the Runge/least-squares lesson in ML vocabulary.
+- **Flight tables / embedded**: precomputed lookup tables + linear/cubic interpolation instead of computing sin/exp on hardware without an FPU.
+
+## Dry run by hand
+
+**1.** Lagrange through 2 points (1, 3) and (3, 7) — build it term by term:
+- L₀(x) = (x−3)/(1−3) = −(x−3)/2, and L₀(1) = 1, L₀(3) = 0 — each basis polynomial is 1 at its own node, 0 at the others. That's the whole trick.
+- p(x) = 3·L₀(x) + 7·L₁(x) = 3·(−(x−3)/2) + 7·(x−1)/2 = 2x + 1. Check: p(1)=3 ✓, p(3)=7 ✓.
+
+**2.** Feel Runge: interpolate f(x) = 1/(1+25x²) at x = −1, 0, 1 (three points, parabola). f = 1/27, 1, 1/27 → p(x) = 1 − (26/27)x². Evaluate at x = 0.85: p = 0.305, but f(0.85) = 0.052 — the parabola already overshoots 6× at the edge. Adding equally spaced points forces the polynomial to match at more nodes *and oscillate harder between them*.
+
+**3.** Least squares by hand, 3 points: (0, 1), (1, 2), (2, 2), fit a line y = c₀ + c₁x.
+- n=3, Σx=3, Σy=5, Σx²=5, Σxy=6
+- slope c₁ = (3·6 − 3·5)/(3·5 − 3²) = 3/6 = 0.5; intercept c₀ = (5 − 0.5·3)/3 = 7/6
+- Line: y = 7/6 + x/2. Residuals: −1/6, +1/3, −1/6 — sum to zero (least squares always centers residuals). Squaring is why the middle outlier-ish point pulls harder than its size suggests.
+
 ## Gotchas
 
 - Extrapolation (evaluating outside the data range) with polynomials diverges fast — never trust it.

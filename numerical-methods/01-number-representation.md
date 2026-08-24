@@ -89,6 +89,22 @@ float('nan') == float('nan')   # False — NaN equals nothing, including itself
 
 Python raises on `1/0.0` (a language choice); IEEE semantics (`inf`, `nan` propagation) apply in numpy and everywhere downstream (Spark, C extensions). `nan` is sticky: any operation with nan returns nan — that's how a single bad row poisons an entire aggregate.
 
+## Where it's used
+
+- **Finance**: ledgers store integer cents or `Decimal`, never float — a 1e-16 drift on 0.1 becomes real money at scale. Interchange formats (FIX, ISO 20022) specify decimal encodings for this reason.
+- **Games/graphics**: float16 in GPU shaders (half precision) — chosen per-effect by tolerance, not habit. The famous *Quake III fast inverse square root* is pure bit-level float manipulation.
+- **ML**: mixed-precision training (fp16/bf16 compute, fp32 accumulation) is this chapter applied — bf16 trades mantissa for exponent range because gradients span huge magnitudes.
+- **Databases/telemetry**: `SUM(float)` column drift, dedup keys that mismatch after float round-trip, NaN poisoning an aggregate — all day-1 phenomena in production.
+- **GPS/timing**: Patriot-style bugs — time stored as tenths of seconds in a 24-bit register; precision loss over 100h of uptime.
+
+## Dry run by hand
+
+**1.** Write `0.1` in binary. 0.1 × 2 = 0.2 → 0; 0.2 × 2 = 0.4 → 0; 0.4 × 2 = 0.8 → 0; 0.8 × 2 = 1.6 → 1; 0.6 × 2 = 1.2 → 1; then 0.2 repeats → `0.000110011001100…`₂, repeating forever. The 52-bit mantissa must cut it off — that cutoff is the error you see in `print(f"{0.1:.20f}")`.
+
+**2.** Cancellation by hand in 3-digit decimal: compute `1 − cos(1e-4)` where cos(1e-4) = 0.999999995 rounds to 1.00 (3 significant digits). Numerator = 0.00. Now the rewrite: `2 sin²(0.5e-4) = 2 × (5e-5)² = 5e-9` — every digit survives because nothing cancelled. Same algebra, different floating-point fate.
+
+**3.** Absorption: in 3-digit decimal, add `1.00e4 + 3.00e-2`. Align exponents: 1.00e4 + 0.000003e4 → the small term shifts right 6 places, its digits fall off the 3-digit register → result 1.00e4. That's `1e16 + 1 == 1e16` at double precision, exactly.
+
 ## Gotchas
 
 - `0.1` literals in code, JSON, CSV → binary error at parse time, before any arithmetic.

@@ -113,6 +113,28 @@ print(x, lam)                               # [0.707 0.707], 3.0
 
 This is PageRank's core (dominant eigenvector of the link matrix) and why PCA works (top eigenvectors of the covariance matrix = SVD of centered data).
 
+## Where it's used
+
+- **ML everywhere**: linear/logistic regression solves = `lstsq`; PCA = top SVD directions of centered data; attention's QK^T is a batched matmul where conditioning shows up as softmax saturation.
+- **Structural/circuit simulation**: FEA stiffness matrices and Kirchhoff systems are giant sparse Ax=b — pivoting and fill-in decide whether the solve takes seconds or days.
+- **Ranking & graphs**: PageRank = dominant eigenvector (power iteration); spectral clustering = bottom eigenvectors of the Laplacian.
+- **Graphics**: every frame multiplies thousands of 4×4 transforms; normal-equation-free solvers keep camera calibration (bundle adjustment) stable.
+- **Signal processing**: Kalman filter covariance updates are Cholesky-factorized (square-root filters) precisely to preserve symmetric-positive-definiteness in floating point.
+- **Recommendation**: matrix factorization = truncated SVD with missing entries — SVD intuition is the entry ticket.
+
+## Dry run by hand
+
+**1.** Condition number by feel: A = [[1, 1], [1, 1.01]]. Solve Ax = (2, 2.01): x = (1, 1) exactly. Now perturb b to (2, 2.02) — 5e-3 relative change. Subtracting equations: 0.01·x₂ = 0.02 → x₂ = 2, x₁ = 0. The solution moved from (1,1) to (0,2) — 100% relative change from a 0.5% input change. Amplification ≈ 200×: that's κ ≈ 400 showing up physically. No solver can fix it; the *problem* is near-singular.
+
+**2.** Why inv() is wasted work, counted by hand: solving 3×3 by elimination costs ~11 multiply-adds (factor) + ~6 (back-substitute). Computing A⁻¹ is ~3 solves (one per identity column) = ~51 ops, then a matvec = 9 more — ~3.5× the work, and each column of A⁻¹ carries its own rounding history into every future use. Do it once mentally and you'll never write `inv(A) @ b` again.
+
+**3.** Power iteration by hand on A = [[2, 1], [1, 2]], x₀ = (1, 0):
+- A x₀ = (2, 1), normalize → (0.89, 0.45)
+- → (2.24, 1.34) → normalize → (0.86, 0.51)… wait, recompute: A·(0.89,0.45) = (2.23, 1.34) → norm ≈ 2.6 → (0.857, 0.515)
+- next: A·(0.857,0.515) = (2.229, 1.887)→ (0.763, 0.646)… converging toward (0.707, 0.707)
+
+Each step mixes in more of the dominant direction; the component along eigenvector (1,−1) (λ=1) shrinks by 1/3 per iteration relative to (1,1) (λ=3). The ratio λ₂/λ₁ = 1/3 sets the convergence speed — that's the "spectral gap" from the exercise.
+
 ## Gotchas
 
 - `np.linalg.inv` in production code is a red flag in review — always `solve`.

@@ -77,6 +77,26 @@ print(np.linalg.cond(AtA + 1e-4*np.eye(3)))  # ≈ 1e4·smaller — regularizati
 - Local polynomial models (day 3) → gradient = linear model, Newton = quadratic model, trust regions = "model valid only within radius r."
 - Root finding (day 2) → Newton for optimization is Newton for ∇f = 0.
 
+## Where it's used
+
+- **ML training**: SGD/momentum/Adam are this chapter; learning-rate finders, warmup, and loss-spike divergence are the Euler stability boundary in production.
+- **Logistics & ops research**: linear programming (simplex/interior point) routes trucks and schedules crews — interior point methods are Newton + barrier functions.
+- **Finance**: portfolio optimization (Markowitz = quadratic program); calibration of pricing models to market data = nonlinear least squares.
+- **Engineering design**: shape/topology optimization — every airfoil and antenna is a constrained optimization with PDE constraints (adjoint methods = cheap gradients).
+- **Robotics**: trajectory optimization and MPC solve a constrained QP or NLP every control cycle (milliseconds), warm-started from the previous solution — Newton with a great initial guess, exactly as day 2 prescribed.
+- **Statistics**: maximum likelihood estimation = optimization; logistic regression's IRLS algorithm is literally Newton's method on the log-likelihood.
+
+## Dry run by hand
+
+**1.** GD on f(x) = x² from x₀ = 1, η = 0.25: update x ← x − 0.25·2x = 0.5x. Steps: 1 → 0.5 → 0.25 → 0.125 → … Geometric: error halves per step. Now η = 0.75: x ← x − 1.5x = −0.5x: 1 → −0.5 → 0.25 → −0.125 — converges while *oscillating across the minimum*. η = 1: x ← −x — bounces forever. η = 1.1: explodes. The entire learning-rate intuition in one line of arithmetic: |1 − 2η| vs 1.
+
+**2.** Newton by hand on f(x) = x² − 2 as optimization (minimize, not root-find — same thing since f' = 0 at the min of ½(x²−2)²... simpler: minimize f(x) = x², Newton: x ← x − f'/f'' = x − 2x/2 = **0** — one step, from anywhere). Quadratic problems are solved exactly in one Newton step; everything else is measured against that ideal. That's why second-order methods are the gold standard and why κ (non-quadratic-ness, direction-dependent curvature) is the enemy.
+
+**3.** The valley zigzag by feel: f(x,y) = x² + 100y² from (1, 1) with η = 0.01:
+- grad = (2, 200) → step (−0.02, −2) → lands at (0.98, −1): crossed the valley and overshot y by a mile.
+- next grad = (1.96, −200) → (0.96, +1) — crossed back. x creeps 0.02/iteration while y ping-pongs ±1.
+- 50 steps later: x ≈ 0.37, still far from 0 — while y has visited ±1 dozens of times. You have *seen* κ = 100 throttle convergence. Momentum's fix, felt: the y-gradients alternate sign and cancel in the velocity; the x-gradients reinforce. Directional averaging, nothing magic.
+
 ## Gotchas
 
 - Loss decreasing ≠ converged to a minimum — saddle points have ∇f ≈ 0 too (Hessian indefinite). In high-D, saddles vastly outnumber local minima.

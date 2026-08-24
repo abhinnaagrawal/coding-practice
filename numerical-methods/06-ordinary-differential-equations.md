@@ -89,6 +89,31 @@ Trade-off summary:
 
 Production solvers estimate error per step (embedded RK pair — two orders from shared evaluations, Richardson-style) and grow/shrink h automatically. Two more names worth recognizing: **symplectic integrators** (leapfrog/Verlet) conserve energy over long Hamiltonian simulations where RK4 slowly drains it — the reason orbital mechanics doesn't use RK4 naively.
 
+## Where it's used
+
+- **Games & animation**: position ← velocity integration every frame; semi-implicit (symplectic) Euler is the default because explicit Euler makes springs explode and orbits spiral out — the energy behavior in exercise 2 is felt by every game developer.
+- **Robotics & control**: quadrotor trajectory simulation, PID loops (discretized ODEs), model-predictive control rolls forward dynamics with RK each control tick.
+- **ML**: neural ODEs; gradient descent *is* Euler on θ' = −∇f (day 7); diffusion model sampling is reverse-time ODE/SDE integration — solver order directly buys sample quality per step.
+- **Epidemiology & pharma**: SIR compartment models, drug concentration kinetics (the canonical stiff system — fast absorption, slow elimination).
+- **Aerospace**: orbit propagation uses symplectic or high-order adaptive integrators; RK4 naive drains orbital energy over long horizons.
+- **Electrical engineering**: SPICE circuit simulators live and die on stiff transient analysis — backward differentiation (BDF) is the workhorse.
+
+## Dry run by hand
+
+**1.** Euler on y' = y from (0, 1) with h = 0.5, four steps:
+- y₁ = 1 + 0.5·1 = 1.5 → y₂ = 1.5 + 0.5·1.5 = 2.25 → y₃ = 3.375 → y₄ = 5.0625
+- Exact e² = 7.389. Underestimate — makes sense: the slope *grows* along the true curve, but Euler keeps each step's starting slope for the whole step. Trace it on paper: piecewise-linear segments falling progressively behind the curve.
+
+**2.** RK4's first step on the same problem, h = 0.5:
+- k1 = f(0, 1) = 1
+- k2 = f(0.25, 1 + 0.25) = 1.25
+- k3 = f(0.25, 1 + 0.3125) = 1.3125
+- k4 = f(0.5, 1 + 0.65625) = 1.65625
+- y₁ = 1 + (0.5/6)(1 + 2·1.25 + 2·1.3125 + 1.65625) = 1 + (0.5/6)(7.781) = 1.6484
+- Exact e^0.5 = 1.6487. One step, 4 f-evals, error 3e-4 — vs Euler's error 0.15 for the same h. Feel the midpoint samples doing the work.
+
+**3.** Stability by hand, y' = −10y, h = 0.25: amplification factor 1 + hλ = 1 − 2.5 = **−1.5**. Starting y₀ = 1: y₁ = −1.5, y₂ = +2.25, y₃ = −3.375 — growing with alternating sign. The true answer decays to e^−2.5 ≈ 0.08. The sign flip is the fingerprint: solution crosses zero each step because the step overshoots it. That oscillation in a sim output = instability, instantly diagnosable by hand.
+
 ## Gotchas
 
 - Oscillating growing error at decreasing h: that's instability, not a bug in f.

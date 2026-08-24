@@ -110,6 +110,27 @@ print(4 * hits / N)   # ≈ π (area of quarter unit circle × 4)
 
 Slow (1/√N: 100× more samples for one more digit) but dimension-proof — that's why rendering, finance, and Bayesian inference run on it. Variance reduction (importance/stratified sampling) is how the constant factor gets tamed.
 
+## Where it's used
+
+- **ML training**: backprop is *automatic* differentiation (exact, not finite-difference) — but gradient *checking* in debugging uses the day-5 centered difference at h≈1e-5. Knowing the U-curve is how you pick that h.
+- **Physics sim & games**: velocities from positions, forces from potentials — finite differences every frame, with step-size chosen by stability, not accuracy.
+- **Finance**: Monte Carlo pricing of options (expectation = integral); "Greeks" (delta, gamma) are finite-difference sensitivities of the price function.
+- **Rendering**: every pixel of a 3-D render is a high-dimensional integral (light transport) estimated by Monte Carlo — path tracing noise *is* the 1/√N error bar.
+- **Data/ML pipelines**: AUC, expected calibration error, and every "average over distribution" metric is quadrature; histogramming is rectangle-rule integration.
+- **Control systems**: PID's "I" is a running trapezoid sum; its "D" is a finite difference with noise-amplification exactly as the U-curve predicts — which is why real controllers filter the D term.
+
+## Dry run by hand
+
+**1.** Centered difference of sin at x=1 with h=0.1, by calculator:
+- sin(1.1) = 0.891207, sin(0.9) = 0.783327 → slope ≈ (0.891207−0.783327)/0.2 = 0.53940. True: cos(1) = 0.54030. Error 9e-4.
+- Halve h to 0.05: sin(1.05)=0.867423, sin(0.95)=0.813416 → slope 0.54035 → error 2.2e-4, almost exactly ¼ of before. That's O(h²) you can see with four digits.
+
+**2.** Trapezoid vs Simpson on ∫₀¹ x² dx (exact 1/3), one panel pair (n=2, h=0.5):
+- Trapezoid: 0.5·(0.5·f(0) + f(0.5) + 0.5·f(1)) = 0.5·(0 + 0.25 + 0.5) = 0.375 — err 0.042.
+- Simpson: (h/3)·(f(0) + 4f(0.5) + f(1)) = (0.5/3)·(0 + 1 + 1) = 1/3 — *exact*. Simpson integrates any polynomial up to degree 3 exactly (the +1 degree is a freebie from symmetry); x² is trivially inside. Now you know why Simpson punches above its weight.
+
+**3.** Monte Carlo π by hand with 4 "random" points in the unit square: (0.2,0.3), (0.8,0.7), (0.1,0.9), (0.6,0.4). Inside the quarter circle? Distances²: 0.13 ✓, 1.13 ✗, 0.82 ✓, 0.52 ✓ → π̂ = 4·3/4 = 3.0. With N=4 the error bar is ±σ/√N ≈ ±0.8 — a useless estimate, and *that's the lesson*: MC is dimension-proof, not sample-cheap.
+
 ## Gotchas
 
 - Never differentiate noisy data with finite differences — it amplifies noise by 1/h. Smooth first (fit, then differentiate the fit).

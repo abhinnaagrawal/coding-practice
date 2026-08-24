@@ -88,6 +88,34 @@ def secant(f, x0, x1, tol=1e-14, maxit=50):
 
 Many iterations are x ← g(x). They converge if |g'(x*)| < 1 near the fixed point, with rate |g'| (smaller = faster; g'=0 → quadratic). Newton's method is exactly the choice g(x) = x − f/f' engineered so g'(x*) = 0. This is the lens that also explains why some numerical schemes converge and others don't.
 
+## Where it's used
+
+- **Physics engines / games**: ray–object intersection ("when does the ray hit the sphere") is root finding; collision event detection between timesteps is a bisection-style bracket search on the timeline.
+- **Robotics & graphics**: inverse kinematics solvers are Newton iterations on joint angles — this is why IK fails near singular configurations (Jacobian ≈ singular = f' ≈ 0).
+- **Finance**: implied volatility from option prices (invert Black–Scholes — no closed form, always a solver); bond yield-to-maturity from price.
+- **ML**: trust-region and line-search optimizers solve 1-D root problems per step; the `brentq`-style hybrid (safe bracket + fast secant steps) is the template for robust 1-D solves everywhere.
+- **Systems**: TCP congestion control and PID controllers implicitly solve for an equilibrium — convergence-rate intuition tells you why P-only controllers oscillate.
+
+## Dry run by hand
+
+**1.** Bisect √2 on [1, 2]: signs f(1)=−1, f(2)=+2.
+- m=1.5: f=+0.25 → root in [1, 1.5]
+- m=1.25: f=−0.4375 → root in [1.25, 1.5]
+- m=1.375: f=−0.109 → root in [1.375, 1.5]
+- m=1.4375: f=+0.066 → root in [1.375, 1.4375]
+
+Four steps, interval shrunk 2→0.0625. Each step buys exactly one bit — feel why "linear convergence" means ~3.3 steps per decimal digit.
+
+**2.** Newton on the same problem from x₀=1: x ← x − (x²−2)/2x = (x + 2/x)/2 (the ancient Babylonian method!).
+- x₁ = (1 + 2)/2 = 1.5, err ≈ 8.6e-2
+- x₂ = (1.5 + 1.333)/2 = 1.4167, err ≈ 2.5e-3
+- x₃ = 1.4142157, err ≈ 6e-6
+- x₄ = 1.4142135624, err ≈ 2e-12
+
+Errors: 1e-1 → 1e-3 → 1e-6 → 1e-12. Count the digits doubling — that *is* quadratic convergence, by hand.
+
+**3.** Conditioning feel: solve x² = 2 exactly, then x² = 2.001. Root moves by ≈ 0.001/(2·1.414) ≈ 3.5e-4 — the √ function at 2 is well-conditioned. Now x⁸ = 1 vs x⁸ = 1.01: root moves from 1 to 1.0012 — wait, try x⁸ = 2 vs x⁸ = 2·(1+1e-3): relative root move = 1e-3/8, tiny. But near a *flat* root (x−1)⁸ = 0 vs (x−1)⁸ = 1e-8: root jumps to 1.1. Same solver, wildly different sensitivity — κ belongs to the problem.
+
 ## Gotchas
 
 - Newton converging to *a* root doesn't mean it's *your* root — check f(root) and sanity-check the value.
