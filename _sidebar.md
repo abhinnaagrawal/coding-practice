@@ -34,6 +34,16 @@
   - [08. Idioms, Gotchas & Interview Playbook](python-tutorial/08-idioms-gotchas-interview-playbook.md)
   - [09. Advanced: Decorators, Context Managers & Typing](python-tutorial/09-advanced-decorators-context-managers-typing.md)
 
+- Numerical Methods
+  - [Overview](numerical-methods/README.md)
+  - [01. Number Representation](numerical-methods/01-number-representation.md)
+  - [02. Errors & Root Finding](numerical-methods/02-errors-and-root-finding.md)
+  - [03. Interpolation & Approximation](numerical-methods/03-interpolation-and-approximation.md)
+  - [04. Numerical Linear Algebra](numerical-methods/04-numerical-linear-algebra.md)
+  - [05. Differentiation & Integration](numerical-methods/05-differentiation-and-integration.md)
+  - [06. ODEs](numerical-methods/06-ordinary-differential-equations.md)
+  - [07. Numerical Optimization](numerical-methods/07-numerical-optimization.md)
+
 - Book Summaries
   - [Overview](book-summaries/README.md)
   - Deep Learning (Goodfellow et al.)
