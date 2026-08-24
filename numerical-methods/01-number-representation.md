@@ -11,8 +11,25 @@ Every numerical method is executed in floating point, so its error budget starts
 A `float` (Python/Java `double`) is 64 bits:
 
 ```
-[1 sign][11 exponent][52 mantissa]   value ≈ ±(1.mantissa)₂ × 2^(exponent − 1023)
+[1 sign bit][11 exponent bits][52 mantissa bits]   value = (-1)^sign * (1.mantissa)_2 * 2^(exponent - 1023)
 ```
+
+### Example by hand: decoding the float bit pattern
+Take the number `1.5`:
+1. **Sign**: positive $\implies$ `sign = 0`.
+2. **Binary fraction**: $1.5 = 1 + 1/2 = (1.1)_2 = 1.1 \times 2^0$.
+3. **Biased Exponent**: true exponent is $0$. Add bias $1023 \implies 1023 = (01111111111)_2$.
+4. **Mantissa (fractional part only)**: the leading $1.$ is implicit (hidden bit). The fractional part is $.1000\dots_2$ ($1$ followed by fifty-one $0$s).
+5. Assembled 64 bits: `0 | 01111111111 | 1000000000000000000000000000000000000000000000000000` $\implies$ exact value $1.5$.
+
+Now take `0.1`:
+- $0.1 \times 2 = 0.2$ (0) $\to 0.2 \times 2 = 0.4$ (0) $\to 0.4 \times 2 = 0.8$ (0) $\to 0.8 \times 2 = 1.6$ (1) $\to 0.6 \times 2 = 1.2$ (1) $\to 0.2$ repeats!
+- Binary: $(0.0001100110011\dots)_2 = 1.100110011\dots \times 2^{-4}$.
+- Because it repeats indefinitely, truncation after 52 mantissa bits creates an unavoidable representation error: $\approx 0.10000000000000000555$.
+
+### Where it's used
+- **GPU deep learning (FP16/BF16/FP8)**: modern LLM training uses Bfloat16 (8-bit exponent, 7-bit mantissa) to retain the dynamic range of FP32 while halving memory bandwidth.
+- **Financial systems**: banks and accounting databases mandate integer micro-units or fixed-point decimal types (e.g. `Decimal`) to eliminate binary fractional rounding drift.
 
 Key consequences — run these:
 
@@ -46,6 +63,24 @@ Floats are a **finite, non-uniform grid** on the real line: dense near 0, sparse
 - **Roundoff error** — per-operation, ≤ half a grid step (ulp), relative size ≈ ε ≈ 1e-16.
 - **Catastrophic cancellation** — subtracting near-equal numbers: the common leading bits cancel, leaving mostly accumulated roundoff. Relative error explodes even though each operand was fine.
 
+### Example by hand: catastrophic cancellation
+Imagine a 4-digit decimal floating-point machine:
+- Let $x = 1.001$, $y = 1.000$.
+- Compute $x - y$: $1.001 - 1.000 = 0.001 = 1.000 \times 10^{-3}$.
+- The leading 3 digits cancelled out! The remaining digits were filled with trailing zeros that reflect no true precision. If $x$ had an initial uncertainty of $\pm 0.0004$, the relative error in $x$ was $0.04\%$, but in $x-y$ the relative error is $40\%$!
+
+Now evaluate $f(x) = \frac{1 - \cos(x)}{x^2}$ at $x = 10^{-4}$ with 8 significant digits:
+- $\cos(10^{-4}) \approx 0.999999995$ rounds to $1.0000000$ on an 8-digit system.
+- Numerator: $1.0000000 - 1.0000000 = 0.0000000$.
+- Result: $0.0 / 10^{-8} = 0.0$ (true mathematical limit is $0.5$).
+- **Algebraic fix**: $1 - \cos(x) = 2 \sin^2(x/2)$. For $x = 10^{-4}$:
+  $$\frac{2 \sin^2(5 \times 10^{-5})}{(10^{-4})^2} \approx \frac{2 \times (5 \times 10^{-5})^2}{10^{-8}} = \frac{5 \times 10^{-9}}{10^{-8}} = 0.5$$
+  No subtraction occurred, so all digits remain accurate.
+
+### Where it's used
+- **Quadratic formula in physics engines**: solving $ax^2 + bx + c = 0$ when $b^2 \gg 4ac$. One root subtracts $\sqrt{b^2 - 4ac} \approx b$ from $-b$; we rewrite that root as $x_2 = c / (a x_1)$ to avoid cancellation.
+- **Sample variance computation**: the textbook formula $\frac{1}{n}\sum x_i^2 - (\bar{x})^2$ subtracts two large squares and can return negative variance for tight clusters. Welford's one-pass algorithm avoids this subtraction.
+
 ```python
 # Cancellation demo: f(x) = (1 - cos(x)) / x^2, limit as x→0 is 0.5
 from math import cos
@@ -72,6 +107,21 @@ a, b, c = 1e16, 1.0, -1e16
 print((a + b) + c)   # 0.0   — b was absorbed into a, then cancelled
 print(a + (b + c))   # 1.0   — small terms combined first, then survived
 ```
+
+### Example by hand: absorption and non-associativity
+Work in 3-digit decimal floating-point arithmetic ($d.dd \times 10^e$):
+Let $a = 1.00 \times 10^3$, $b = 4.00 \times 10^0$, $c = 4.00 \times 10^0$.
+1. **Order 1: $(a + b) + c$**
+   - $a + b = 1.00 \times 10^3 + 0.004 \times 10^3 = 1.004 \times 10^3 \xrightarrow{\text{round}} 1.00 \times 10^3$ ($b$ is absorbed).
+   - $(a + b) + c = 1.00 \times 10^3 + 0.004 \times 10^3 \xrightarrow{\text{round}} 1.00 \times 10^3 = \mathbf{1000}$.
+2. **Order 2: $a + (b + c)$**
+   - $b + c = 4.00 + 4.00 = 8.00 \times 10^0$.
+   - $a + (b + c) = 1.00 \times 10^3 + 0.008 \times 10^3 = 1.008 \times 10^3 \xrightarrow{\text{round}} 1.01 \times 10^3 = \mathbf{1010}$.
+- Small terms combined together grew large enough to shift the least significant digit of the final sum.
+
+### Where it's used
+- **Distributed Big Data (MapReduce / Spark / SQL `SUM`)**: floating-point sums are partitioned across workers and reduced in arbitrary order; identical queries on the same dataset can return slightly different results across runs unless Kahan summation or exact tree reductions are applied.
+- **Physics time integration**: accumulating tiny $\Delta t$ increments over billions of simulation steps will stall unless using higher-precision accumulators.
 
 Practical rules:
 - Sum small terms first (or smallest-magnitude first). Better: use `math.fsum` (exactly-rounded summation) or Kahan compensation (chapter exercise).

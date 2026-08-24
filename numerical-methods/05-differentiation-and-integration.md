@@ -29,9 +29,26 @@ for k in range(2, 17, 2):
 
 Optimal h ≈ √ε ≈ 1e-8 for forward, ≈ ε^(1/3) ≈ 6e-6 for centered. **There is no "h → 0" on a computer.**
 
+### Example by hand: differentiating $f(x) = x^3$ at $x = 2$ ($f'(2) = 12$)
+Let step size $h = 0.1$:
+1. **Forward difference**:
+   $$D_{\text{fwd}} = \frac{f(2.1) - f(2.0)}{0.1} = \frac{2.1^3 - 2.0^3}{0.1} = \frac{9.261 - 8.000}{0.1} = \frac{1.261}{0.1} = \mathbf{12.61}$$
+   Error $= |12.61 - 12.0| = 0.61 \approx O(h)$.
+2. **Centered difference**:
+   $$D_{\text{ctr}} = \frac{f(2.1) - f(1.9)}{2(0.1)} = \frac{9.261 - 6.859}{0.2} = \frac{2.402}{0.2} = \mathbf{12.01}$$
+   Error $= |12.01 - 12.0| = 0.01 = h^2 \implies O(h^2)$.
+   Notice: centered difference gave $60\times$ less error from the exact same step size $h=0.1$ because the leading $h$ Taylor terms cancelled symmetrically.
+
+### Where it's used
+- **Neural Network Gradient Checking**: validating custom CUDA backprop implementations by comparing analytical gradients against centered finite differences with $h = 10^{-5}$.
+- **Numerical Jacobians in nonlinear optimization**: computing local slope matrices when explicit formulas for equations are unavailable.
+
+---
+
 ### Richardson extrapolation — free accuracy
 
-If error = C·h² + O(h⁴) (centered diff), compute at h and h/2 and cancel the leading term: D ≈ (4·D(h/2) − D(h))/3 → error O(h⁴):
+If error = C·h² + O(h⁴) (centered diff), compute at h and h/2 and cancel the leading term:
+$$D_{\text{extrap}} = \frac{4 D(h/2) - D(h)}{3} \implies \text{Error } O(h^4)$$
 
 ```python
 def d_richardson(f, x, h):
@@ -40,19 +57,29 @@ def d_richardson(f, x, h):
 print(abs(d_richardson(math.sin, 1.0, 1e-3) - math.cos(1.0)))   # ~1e-13
 ```
 
-Same trick upgrades trapezoid → Romberg integration below. The pattern "combine estimates at two scales to cancel the leading error term" is everywhere in numerical methods.
+### Example by hand: Richardson extrapolation
+Using the centered differences from our cubic $f(x) = x^3$ at $x=2$:
+- At $h = 0.2$: $D(0.2) = \frac{2.2^3 - 1.8^3}{0.4} = \frac{10.648 - 5.832}{0.4} = \frac{4.816}{0.4} = 12.04$.
+- At $h/2 = 0.1$: $D(0.1) = 12.01$.
+- Combine them:
+  $$D_{\text{extrap}} = \frac{4(12.01) - 12.04}{3} = \frac{48.04 - 12.04}{3} = \frac{36.00}{3} = \mathbf{12.0000\dots}$$
+  The $O(h^2)$ error was cancelled completely, recovering the exact derivative!
 
-**Modern alternatives** (know they exist): automatic differentiation (exact derivatives of code via chain rule — what PyTorch/JAX do; not finite differences at all) and complex-step differentiation (f(x+ih)/imag — no cancellation, machine precision).
+### Where it's used
+- **Romberg Integration**: systematically accelerating trapezoid sums to $O(h^4), O(h^6), O(h^8)$ quadrature rules.
+- **Adaptive ODE step-size error estimators**: computing local truncation error without additional function evaluations.
+
+---
 
 ## Integration: area without antiderivatives
 
 Approximate f by a low-degree polynomial on each subinterval and integrate *that*:
 
-| Rule | Local model | Error (n panels) |
-|------|-------------|------------------|
-| Trapezoid | line | O(h²) = O(1/n²) |
-| Simpson | parabola | O(h⁴) = O(1/n⁴) |
-| Gauss-Legendre (k pts) | optimal polynomial | spectral — needs ~few points per wavelength |
+| Rule | Local model | Formula on $[a, b]$ | Error (n panels) |
+|------|-------------|---------------------|------------------|
+| Trapezoid | Line | $\frac{h}{2}[f(a) + f(b)]$ | $O(h^2) = O(1/n^2)$ |
+| Simpson | Parabola | $\frac{h}{3}[f(a) + 4f(\frac{a+b}{2}) + f(b)]$ | $O(h^4) = O(1/n^4)$ |
+| Gauss-Legendre (k pts) | Optimal polynomial | $\sum w_i f(x_i)$ | Spectral / Exponential |
 
 ```python
 def trapezoid(f, a, b, n):
@@ -77,7 +104,20 @@ for n in (10, 100, 1000):
 # n=1000  trap 1.6e-6   simp 8.1e-13
 ```
 
-The table's error orders are visible: doubling n divides trapezoid error by 4, Simpson by 16.
+### Example by hand: integrating $\int_0^2 x^3 dx$ (exact value = $\left[\frac{x^4}{4}\right]_0^2 = 4.0$)
+Use $n=2$ panels over $[0, 2] \implies h = 1.0$. Nodes are $x_0 = 0, x_1 = 1, x_2 = 2$.
+Function values: $f(0) = 0, f(1) = 1, f(2) = 8$.
+1. **Trapezoid Rule**:
+   $$T = 1.0 \times \left(\frac{1}{2}(0) + 1 + \frac{1}{2}(8)\right) = 1.0 \times (0 + 1 + 4) = \mathbf{5.0} \quad (\text{Error} = 1.0)$$
+2. **Simpson's Rule**:
+   $$S = \frac{1.0}{3} \times (f(0) + 4 f(1) + f(2)) = \frac{1}{3} \times (0 + 4(1) + 8) = \frac{12}{3} = \mathbf{4.0} \quad (\text{Error} = \mathbf{0.0}!)$$
+- Why is Simpson exact for a cubic $x^3$? Symmetry cancels the 3rd-order error term; Simpson integrates all polynomials up to degree 3 with zero truncation error!
+
+### Where it's used
+- **Machine Learning Evaluation (ROC-AUC / PR-AUC)**: calculating the Area Under the Curve for classification model metrics via trapezoidal integration over discrete threshold points.
+- **Digital Signal Processing (PID Controllers)**: the integral term $I(t) = K_i \int_0^t e(\tau)d\tau$ accumulates error using trapezoidal integration each sampling period.
+
+---
 
 ### Adaptive quadrature — spend points where the function is hard
 
@@ -96,9 +136,17 @@ f = lambda x: 1 / (1 + 100*(x - 0.3)**2)          # sharp spike at 0.3
 print(adapt(f, 0, 1, 1e-8))                        # concentrates panels near the spike
 ```
 
+### Where it's used
+- **Boundary element methods & fluid dynamics**: calculating aerodynamic drag where pressure gradients spike along sharp wing edges but stay smooth elsewhere.
+- **Black-Scholes option barrier pricing**: integrating probability densities with discontinuous pay-off triggers.
+
+---
+
 ### Monte Carlo — when dimension defeats grids
 
-Grid methods cost n^d points in d dimensions (curse of dimensionality). Monte Carlo: sample uniformly, average f × volume; error ~ σ/√N regardless of dimension.
+Grid methods cost n^d points in d dimensions (curse of dimensionality: a 10-point grid in 20 dimensions requires $10^{20}$ points).
+Monte Carlo samples uniformly at random: $I \approx \text{Volume} \times \frac{1}{N}\sum_{i=1}^N f(x_i)$.
+Error is $O\left(\frac{\sigma}{\sqrt{N}}\right)$ **independent of dimension $d$**!
 
 ```python
 import random, math
@@ -108,28 +156,20 @@ hits = sum(1 for _ in range(N) if random.random()**2 + random.random()**2 <= 1)
 print(4 * hits / N)   # ≈ π (area of quarter unit circle × 4)
 ```
 
-Slow (1/√N: 100× more samples for one more digit) but dimension-proof — that's why rendering, finance, and Bayesian inference run on it. Variance reduction (importance/stratified sampling) is how the constant factor gets tamed.
+### Example by hand: Monte Carlo estimating $\int_0^1 x^2 dx$ (exact = $1/3 \approx 0.3333$)
+Take 4 random numbers: $x_1 = 0.2, x_2 = 0.4, x_3 = 0.6, x_4 = 0.8$.
+- Evaluate $f(x) = x^2$:
+  - $f(0.2) = 0.04$
+  - $f(0.4) = 0.16$
+  - $f(0.6) = 0.36$
+  - $f(0.8) = 0.64$
+- Sample mean: $\hat{I} = \frac{0.04 + 0.16 + 0.36 + 0.64}{4} = \frac{1.20}{4} = \mathbf{0.3000}$.
+- Error $= |0.30 - 0.3333| = 0.0333$.
+- To get 1 more digit of accuracy ($\div 10$ error), we need $100\times$ more samples ($N = 400$).
 
-## Where it's used
-
-- **ML training**: backprop is *automatic* differentiation (exact, not finite-difference) — but gradient *checking* in debugging uses the day-5 centered difference at h≈1e-5. Knowing the U-curve is how you pick that h.
-- **Physics sim & games**: velocities from positions, forces from potentials — finite differences every frame, with step-size chosen by stability, not accuracy.
-- **Finance**: Monte Carlo pricing of options (expectation = integral); "Greeks" (delta, gamma) are finite-difference sensitivities of the price function.
-- **Rendering**: every pixel of a 3-D render is a high-dimensional integral (light transport) estimated by Monte Carlo — path tracing noise *is* the 1/√N error bar.
-- **Data/ML pipelines**: AUC, expected calibration error, and every "average over distribution" metric is quadrature; histogramming is rectangle-rule integration.
-- **Control systems**: PID's "I" is a running trapezoid sum; its "D" is a finite difference with noise-amplification exactly as the U-curve predicts — which is why real controllers filter the D term.
-
-## Dry run by hand
-
-**1.** Centered difference of sin at x=1 with h=0.1, by calculator:
-- sin(1.1) = 0.891207, sin(0.9) = 0.783327 → slope ≈ (0.891207−0.783327)/0.2 = 0.53940. True: cos(1) = 0.54030. Error 9e-4.
-- Halve h to 0.05: sin(1.05)=0.867423, sin(0.95)=0.813416 → slope 0.54035 → error 2.2e-4, almost exactly ¼ of before. That's O(h²) you can see with four digits.
-
-**2.** Trapezoid vs Simpson on ∫₀¹ x² dx (exact 1/3), one panel pair (n=2, h=0.5):
-- Trapezoid: 0.5·(0.5·f(0) + f(0.5) + 0.5·f(1)) = 0.5·(0 + 0.25 + 0.5) = 0.375 — err 0.042.
-- Simpson: (h/3)·(f(0) + 4f(0.5) + f(1)) = (0.5/3)·(0 + 1 + 1) = 1/3 — *exact*. Simpson integrates any polynomial up to degree 3 exactly (the +1 degree is a freebie from symmetry); x² is trivially inside. Now you know why Simpson punches above its weight.
-
-**3.** Monte Carlo π by hand with 4 "random" points in the unit square: (0.2,0.3), (0.8,0.7), (0.1,0.9), (0.6,0.4). Inside the quarter circle? Distances²: 0.13 ✓, 1.13 ✗, 0.82 ✓, 0.52 ✓ → π̂ = 4·3/4 = 3.0. With N=4 the error bar is ±σ/√N ≈ ±0.8 — a useless estimate, and *that's the lesson*: MC is dimension-proof, not sample-cheap.
+### Where it's used
+- **Photorealistic 3D Rendering (Path Tracing)**: rendering scenes with global illumination in Pixar/Blender traces millions of light rays per pixel via Monte Carlo integration over hemisphere angles.
+- **Quantitative Finance**: pricing multi-asset exotic basket options where payoff depends on 50+ correlated stock prices simultaneously.
 
 ## Gotchas
 

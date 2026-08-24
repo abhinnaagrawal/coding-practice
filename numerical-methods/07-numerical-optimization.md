@@ -6,9 +6,9 @@ Optimization = root-finding's sibling: minimize f(x) instead of solving f(x) = 0
 
 ## Gradient descent — Euler's method on the gradient flow
 
-$$\theta \leftarrow \theta - \eta \, \nabla f(\theta)$$
+$$\theta_{k+1} = \theta_k - \eta \, \nabla f(\theta_k)$$
 
-This is exactly forward Euler applied to the ODE θ' = −∇f(θ), with learning rate η as the step size h. Every day-6 lesson transfers: too-large η → instability/divergence; stiff (ill-conditioned) f → tiny η forced on you.
+This is exactly forward Euler applied to the continuous trajectory $\theta'(t) = -\nabla f(\theta(t))$, with learning rate $\eta$ as the step size $h$.
 
 ```python
 import math, random
@@ -29,11 +29,36 @@ for eta in (0.1, 0.9, 1.0, 1.01):
 # 1.01  → huge      DIVERGES: factor 1.02 > 1 — the Euler stability boundary!
 ```
 
-For quadratics f = ½xᵀAx the stability boundary is η < 2/λ_max(A) — the exact same |1 + hλ| ≤ 1 condition as Euler. Learning-rate schedules, warmups, and divergence spikes in ML training are this inequality wearing a trenchcoat.
+For quadratics $f(x) = \frac{1}{2} x^T A x$, the gradient is $\nabla f = A x$. The update is:
+$$x_{k+1} = x_k - \eta A x_k = (I - \eta A) x_k$$
+Convergence requires $|1 - \eta \lambda_i| < 1 \implies \mathbf{\eta < \frac{2}{\lambda_{\max}(A)}}$.
+
+### Example by hand: optimizing $f(x) = 2x^2$ ($f'(x) = 4x$) from $x_0 = 1$
+Update: $x_{k+1} = x_k - \eta(4x_k) = (1 - 4\eta)x_k$.
+- **Case 1: $\eta = 0.2$** ($1 - 4(0.2) = 0.2$):
+  - $x_1 = 0.2(1) = \mathbf{0.2}$
+  - $x_2 = 0.2(0.2) = \mathbf{0.04}$
+  - $x_3 = 0.2(0.04) = \mathbf{0.008}$ (monotonically geometric decay).
+- **Case 2: $\eta = 0.4$** ($1 - 4(0.4) = -0.6$):
+  - $x_1 = -0.6(1) = \mathbf{-0.6}$
+  - $x_2 = -0.6(-0.6) = \mathbf{+0.36}$
+  - $x_3 = -0.6(0.36) = \mathbf{-0.216}$ (converges while oscillating across the minimum).
+- **Case 3: $\eta = 0.5$** ($1 - 4(0.5) = -1.0$):
+  - $x_1 = -1.0, x_2 = +1.0, x_3 = -1.0$ (stuck in eternal limit cycle!).
+- **Case 4: $\eta = 0.55$** ($1 - 4(0.55) = -1.2$):
+  - $x_1 = -1.2, x_2 = +1.44, x_3 = -1.728 \to \infty$ (explosive divergence!).
+
+### Where it's used
+- **Deep Learning Model Training (SGD)**: updating millions of weights across neural network layers per mini-batch.
+- **Logistic Regression & Matrix Factorization**: estimating recommender system embeddings.
+
+---
 
 ## Conditioning: why gradient descent crawls on valleys
 
-A long thin valley (ill-conditioned Hessian: λ_max/λ_min big) forces η ≤ 2/λ_max, but progress along the shallow direction then moves at rate ~(1 − η·λ_min) ≈ 1 − λ_min/λ_max = 1 − 1/κ. **Convergence rate ≈ condition number of the Hessian.** Zig-zagging across the valley is the visible symptom.
+A long thin valley (ill-conditioned Hessian: $\lambda_{\max} \gg \lambda_{\min}$) forces $\eta \le \frac{2}{\lambda_{\max}}$.
+Along the flat direction, progress per step is governed by $(1 - \eta \lambda_{\min}) \approx 1 - \frac{2}{\kappa}$.
+**Convergence rate $\approx 1 - \frac{2}{\kappa}$** — for $\kappa = 1000$, error shrinks by only $0.2\%$ per step!
 
 ```python
 # f(x,y) = x² + 100y² — valley along x; κ = 100
@@ -49,53 +74,74 @@ def gd2(grad, t0, eta, n):
 print(gd2(valley_grad, (1.0, 1.0), 0.009, 200))   # y died fast, x still ~0.15 — crawling
 ```
 
-## The fixes, as numerical methods
+---
 
-- **Newton in n-D**: θ ← θ − H⁻¹∇f (H = Hessian). Second-order — rescales each direction by its curvature, κ disappears, quadratic convergence near the optimum. Cost: Hessian O(n²) storage, O(n³) solve — impossible for 10⁹ params.
-- **Quasi-Newton (BFGS, L-BFGS)**: build H⁻¹ approximately from gradient history — day-3's secant idea in n-D. The standard for medium-size problems (`scipy.optimize.minimize(method='L-BFGS-B')`).
-- **Momentum**: heavy ball — θ accumulates velocity, dampens the zig (cross-valley), amplifies the zag-free direction. Polyak/Nesterov are second-order ODE discretizations of damped descent.
-- **Adam**: per-coordinate adaptive learning rate ≈ diagonal approximation of curvature (a diagonal quasi-Newton, roughly). Works because the diagonal captures most of the conditioning in practice.
+## The second-order view: Newton & Quasi-Newton (BFGS)
 
-## Linear least squares — the optimization you can solve exactly
+Newton's optimization method approximates $f(\theta)$ with a local quadratic Taylor model:
+$$\theta_{k+1} = \theta_k - H^{-1} \nabla f(\theta_k), \quad \text{where } H_{ij} = \frac{\partial^2 f}{\partial \theta_i \partial \theta_j}$$
+Because the step multiplies by $H^{-1}$, curvature is neutralized across all axes ($\kappa \to 1$). Near the minimum, convergence is **quadratic**!
 
-min ‖Ax − b‖₂: convex, closed-form via the gradient = 0 → normal equations AᵀAx = Aᵀb — but solve it with QR/SVD (`lstsq`), never by inverting AᵀA (day 4: κ gets squared). Every ML "closed-form" trick (ridge regression = least squares + λI regularization, which also *improves conditioning*: κ((AᵀA + λI)) < κ(AᵀA)) is this problem in costume.
+### Example by hand: Newton's method on $f(x) = x^4 - 2x^2$ ($f'(x) = 4x^3 - 4x, \quad f''(x) = 12x^2 - 4$)
+Start from $x_0 = 1.5$ (seeking the local minimum at $x^* = 1.0$):
+- **Iteration 1**:
+  - Gradient $f'(1.5) = 4(3.375) - 4(1.5) = 13.5 - 6.0 = 7.5$.
+  - Hessian $f''(1.5) = 12(2.25) - 4 = 27 - 4 = 23.0$.
+  - Newton step $\Delta x = -\frac{7.5}{23.0} \approx -0.3261$.
+  - $x_1 = 1.5 - 0.3261 = \mathbf{1.1739}$.
+- **Iteration 2**:
+  - $f'(1.1739) \approx 1.7725$, $f''(1.1739) \approx 12.536$.
+  - $x_2 = 1.1739 - \frac{1.7725}{12.536} \approx \mathbf{1.0325}$.
+- **Iteration 3**:
+  - $x_3 \approx \mathbf{1.0015} \to x_4 \approx \mathbf{1.00000003}$ (rapid quadratic convergence!).
 
-```python
-import numpy as np
-# ridge: adds λI — watch the condition number drop
-A = np.random.default_rng(0).normal(size=(50, 3))
-A[:, 2] = A[:, 0] + 1e-8 * np.random.default_rng(1).normal(size=50)   # near-collinear
-AtA = A.T @ A
-print(np.linalg.cond(AtA))                 # huge
-print(np.linalg.cond(AtA + 1e-4*np.eye(3)))  # ≈ 1e4·smaller — regularization as conditioning
-```
+### Where it's used
+- **Quasi-Newton (L-BFGS)**: the default engine in `scipy.optimize.minimize` for scientific calibration, climate models, and non-deep ML (e.g. CRFs).
+- **Model Predictive Control (MPC) in autonomous driving**: solving nonlinear trajectory optimization problems in milliseconds via real-time Sequential Quadratic Programming (SQP).
 
-## The week's threads converge
+---
 
-- Step size dilemma (days 1, 5, 6) → learning-rate tuning.
-- Conditioning (days 2, 4) → why valleys are slow, why preconditioning/normalizing features helps.
-- Local polynomial models (day 3) → gradient = linear model, Newton = quadratic model, trust regions = "model valid only within radius r."
-- Root finding (day 2) → Newton for optimization is Newton for ∇f = 0.
+## Momentum & Adaptive optimizers
 
-## Where it's used
+- **Polyak Momentum (Heavy Ball)**:
+  $$v_{k+1} = \mu v_k - \eta \nabla f(\theta_k), \quad \theta_{k+1} = \theta_k + v_{k+1}$$
+  Dampens high-frequency oscillations across steep valley walls and accelerates along the shallow floor.
+- **Adam (Adaptive Moment Estimation)**: divides step by running root-mean-square of recent gradients:
+  $$\theta \leftarrow \theta - \frac{\eta}{\sqrt{v_t} + \epsilon} m_t$$
+  Acts as a diagonal approximation to the inverse Hessian $H^{-1}$, rescaling ill-conditioned coordinates independently.
 
-- **ML training**: SGD/momentum/Adam are this chapter; learning-rate finders, warmup, and loss-spike divergence are the Euler stability boundary in production.
-- **Logistics & ops research**: linear programming (simplex/interior point) routes trucks and schedules crews — interior point methods are Newton + barrier functions.
-- **Finance**: portfolio optimization (Markowitz = quadratic program); calibration of pricing models to market data = nonlinear least squares.
-- **Engineering design**: shape/topology optimization — every airfoil and antenna is a constrained optimization with PDE constraints (adjoint methods = cheap gradients).
-- **Robotics**: trajectory optimization and MPC solve a constrained QP or NLP every control cycle (milliseconds), warm-started from the previous solution — Newton with a great initial guess, exactly as day 2 prescribed.
-- **Statistics**: maximum likelihood estimation = optimization; logistic regression's IRLS algorithm is literally Newton's method on the log-likelihood.
+### Example by hand: one step of Momentum on valley $f(x, y) = x^2 + 10y^2$
+Let $\eta = 0.05, \mu = 0.5$. Start at $(x_0, y_0) = (1, 1)$ with initial velocity $(v_x, v_y) = (0, 0)$.
+- Gradients: $\nabla f = (2x, 20y) \implies \nabla f(1, 1) = (2, 20)$.
+- Update velocity:
+  - $v_x = 0.5(0) - 0.05(2) = \mathbf{-0.10}$
+  - $v_y = 0.5(0) - 0.05(20) = \mathbf{-1.00}$
+- Update position:
+  - $x_1 = 1.0 + (-0.10) = \mathbf{0.90}$
+  - $y_1 = 1.0 + (-1.00) = \mathbf{0.00}$
+- Next step gradients at $(0.90, 0.00)$: $\nabla f = (1.8, 0.0)$.
+  - $v_x = 0.5(-0.10) - 0.05(1.8) = -0.05 - 0.09 = \mathbf{-0.14}$ (accumulated speed along $x$!).
+  - $v_y = 0.5(-1.00) - 0.05(0) = \mathbf{-0.50}$.
+- Momentum doubled down on moving down the flat valley floor while damping vertical bounce.
 
-## Dry run by hand
+---
 
-**1.** GD on f(x) = x² from x₀ = 1, η = 0.25: update x ← x − 0.25·2x = 0.5x. Steps: 1 → 0.5 → 0.25 → 0.125 → … Geometric: error halves per step. Now η = 0.75: x ← x − 1.5x = −0.5x: 1 → −0.5 → 0.25 → −0.125 — converges while *oscillating across the minimum*. η = 1: x ← −x — bounces forever. η = 1.1: explodes. The entire learning-rate intuition in one line of arithmetic: |1 − 2η| vs 1.
+## Regularized least squares — fixing conditioning by design
 
-**2.** Newton by hand on f(x) = x² − 2 as optimization (minimize, not root-find — same thing since f' = 0 at the min of ½(x²−2)²... simpler: minimize f(x) = x², Newton: x ← x − f'/f'' = x − 2x/2 = **0** — one step, from anywhere). Quadratic problems are solved exactly in one Newton step; everything else is measured against that ideal. That's why second-order methods are the gold standard and why κ (non-quadratic-ness, direction-dependent curvature) is the enemy.
+When $A^T A$ is near-singular (ill-conditioned), **Ridge Regression (Tikhonov Regularization)** solves:
+$$\min \|A\mathbf{c} - \mathbf{y}\|_2^2 + \lambda \|\mathbf{c}\|_2^2 \implies (A^T A + \lambda I)\mathbf{c} = A^T \mathbf{y}$$
+Adding $\lambda I$ shifts all eigenvalues: $\lambda_i(A^T A + \lambda I) = \lambda_i(A^T A) + \lambda$.
+Condition number drops from $\frac{\lambda_{\max}}{\lambda_{\min}} \to \frac{\lambda_{\max} + \lambda}{\lambda_{\min} + \lambda}$.
 
-**3.** The valley zigzag by feel: f(x,y) = x² + 100y² from (1, 1) with η = 0.01:
-- grad = (2, 200) → step (−0.02, −2) → lands at (0.98, −1): crossed the valley and overshot y by a mile.
-- next grad = (1.96, −200) → (0.96, +1) — crossed back. x creeps 0.02/iteration while y ping-pongs ±1.
-- 50 steps later: x ≈ 0.37, still far from 0 — while y has visited ±1 dozens of times. You have *seen* κ = 100 throttle convergence. Momentum's fix, felt: the y-gradients alternate sign and cancel in the velocity; the x-gradients reinforce. Directional averaging, nothing magic.
+### Example by hand: regularizing an ill-conditioned $2\times 2$ normal equation
+Let $A^T A = \begin{pmatrix} 100 & 0 \\ 0 & 0.01 \end{pmatrix}$.
+- Condition number $\kappa = 100 / 0.01 = \mathbf{10,000}$ (terribly ill-conditioned).
+- Add regularization $\lambda = 1.0 \implies A^T A + 1.0 I = \begin{pmatrix} 101 & 0 \\ 0 & 1.01 \end{pmatrix}$.
+- New condition number: $\kappa_{\text{ridge}} = \frac{101}{1.01} = \mathbf{100}$ ($100\times$ improvement in numerical stability!).
+
+### Where it's used
+- **Econometrics & Multicollinear regression**: preventing regression coefficients from exploding when two features (e.g., house square footage and number of rooms) are highly correlated.
+- **Medical Imaging (CT / MRI reconstruction)**: solving underdetermined inverse Radon transforms where physical sensor measurements are fewer than voxel count.
 
 ## Gotchas
 

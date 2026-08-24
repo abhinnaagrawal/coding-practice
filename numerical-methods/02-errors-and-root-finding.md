@@ -34,11 +34,34 @@ def bisect(f, a, b, tol=1e-12):
 print(bisect(lambda x: x**2 - 2, 1, 2))   # 1.414213562373...
 ```
 
-**Linear convergence**: error halves each step → ~3.3 steps per decimal digit → ~52 iterations for full double precision. Guaranteed. No derivative needed. The price: needs a sign change (misses double roots like x²) and only finds one root in the bracket.
+**Linear convergence**: error halves each step $\implies \frac{|e_{k+1}|}{|e_k|} \approx \frac{1}{2}$. Each step buys $\log_{10}(2) \approx 0.301$ decimal digits ($\approx 3.3$ steps per decimal digit).
+
+#### Example by hand: finding $\sqrt{2}$ via $f(x) = x^2 - 2 = 0$ on $[1, 2]$
+- Initial: $a_0 = 1$ ($f(1) = -1$), $b_0 = 2$ ($f(2) = +2$). Sign change confirmed.
+- **Iteration 1**:
+  - Midpoint $m_0 = \frac{1 + 2}{2} = 1.5$.
+  - Evaluate $f(1.5) = 1.5^2 - 2 = 2.25 - 2 = +0.25 > 0$.
+  - Same sign as $b_0 \implies$ root is in $[1.0, 1.5]$. New interval width $= 0.5$.
+- **Iteration 2**:
+  - Midpoint $m_1 = \frac{1.0 + 1.5}{2} = 1.25$.
+  - Evaluate $f(1.25) = 1.25^2 - 2 = 1.5625 - 2 = -0.4375 < 0$.
+  - Same sign as $a_1 \implies$ root is in $[1.25, 1.5]$. New interval width $= 0.25$.
+- **Iteration 3**:
+  - Midpoint $m_2 = \frac{1.25 + 1.5}{2} = 1.375$.
+  - Evaluate $f(1.375) = 1.890625 - 2 = -0.109375 < 0$.
+  - Root is in $[1.375, 1.5]$. New interval width $= 0.125$.
+- Guaranteed error bound after 3 steps is $\le \frac{2 - 1}{2^3} = 0.125$.
+
+#### Where it's used
+- **Collision detection in game engines / physics**: finding the exact moment of contact between moving continuous meshes within a discrete frame $\Delta t$.
+- **Safe bracket guards**: outer wrapper for high-speed optimizers (e.g., Brent's method in `scipy.optimize.brentq`) to prevent divergence when Newton steps escape the bounding domain.
+
+---
 
 ### Newton's method — quadratic, when it works
 
-Taylor-expand f near the guess and solve the *linear* model: x ← x − f(x)/f'(x).
+Taylor-expand f near the guess: $f(x + \Delta x) \approx f(x) + f'(x)\Delta x = 0 \implies \Delta x = -\frac{f(x)}{f'(x)}$.
+Iteration update: $x_{k+1} = x_k - \frac{f(x_k)}{f'(x_k)}$.
 
 ```python
 def newton(f, df, x, tol=1e-14, maxit=50):
@@ -54,23 +77,38 @@ def newton(f, df, x, tol=1e-14, maxit=50):
 print(newton(lambda x: x**2 - 2, lambda x: 2*x, 1.0))
 ```
 
-**Quadratic convergence**: number of correct digits roughly *doubles* each iteration (ε_{n+1} ≈ C·εₙ²). Watch it happen:
+**Quadratic convergence**: near a simple root, $|e_{k+1}| \approx C \cdot |e_k|^2$. The number of correct decimal digits **doubles** each iteration!
 
-```python
-x = 1.0
-for i in range(6):
-    x -= (x*x - 2) / (2*x)
-    print(i, x, abs(x - 2**0.5))   # errors: 1e-1, 2e-3, 5e-7, 2e-13, 0
-```
+#### Example by hand: finding $\sqrt{5}$ via $f(x) = x^2 - 5 = 0$ ($f'(x) = 2x$)
+Update formula: $x_{k+1} = x_k - \frac{x_k^2 - 5}{2x_k} = \frac{1}{2}\left(x_k + \frac{5}{x_k}\right)$.
+Start with initial guess $x_0 = 2.0$:
+- **Iteration 1**:
+  - $x_1 = \frac{1}{2}\left(2.0 + \frac{5}{2.0}\right) = \frac{1}{2}(2.0 + 2.5) = \mathbf{2.25}$
+  - Error: $|2.25 - 2.23606798| \approx 1.39 \times 10^{-2}$ ($\sim 2$ correct digits).
+- **Iteration 2**:
+  - $x_2 = \frac{1}{2}\left(2.25 + \frac{5}{2.25}\right) = \frac{1}{2}\left(\frac{9}{4} + \frac{20}{9}\right) = \frac{161}{72} \approx \mathbf{2.236111\dots}$
+  - Error: $|2.236111 - 2.236068| \approx 4.3 \times 10^{-5}$ ($\sim 5$ correct digits — doubled!).
+- **Iteration 3**:
+  - $x_3 = \frac{1}{2}\left(\frac{161}{72} + \frac{360}{161}\right) = \frac{51841}{23184} \approx \mathbf{2.2360679779}$
+  - Error: $\approx 4 \times 10^{-10}$ ($\sim 10$ correct digits — doubled again!).
+
+#### Where it's used
+- **Robotics Inverse Kinematics (IK)**: solving for target joint angles given end-effector cartesian coordinates via multidimensional Newton-Raphson on the kinematic Jacobian.
+- **Implicit differential equation solvers**: Backward Euler and Radau solvers run Newton's method inside every timestep to solve algebraic constraints.
 
 Failure modes (worth memorizing):
 - f'(x) = 0 or tiny → step explodes (division by ~0). Also flat roots: quadratic → linear convergence.
 - Cycles/divergence: f(x) = x^(1/3) from any x ≠ 0 diverges; some functions cycle between two guesses forever.
 - Needs a good initial guess — global behavior is chaotic (literally: Newton fractals).
 
+---
+
 ### Secant method — Newton without the derivative
 
-Replace f' with a finite difference of the last two iterates: x ← x − f(x)·(x−x_prev)/(f(x)−f(x_prev)). Convergence is **superlinear** (order ≈ 1.618, the golden ratio) — between bisection and Newton, and no df needed:
+Replace the analytical derivative $f'(x_k)$ with the finite-difference slope between the last two points:
+$$f'(x_k) \approx \frac{f(x_k) - f(x_{k-1})}{x_k - x_{k-1}} \implies x_{k+1} = x_k - f(x_k)\frac{x_k - x_{k-1}}{f(x_k) - f(x_{k-1})}$$
+
+Convergence is **superlinear** (order $\phi = \frac{1+\sqrt{5}}{2} \approx 1.618$) — each step multiplies the number of correct digits by $\approx 1.62$, without requiring derivative calculations.
 
 ```python
 def secant(f, x0, x1, tol=1e-14, maxit=50):
@@ -84,37 +122,42 @@ def secant(f, x0, x1, tol=1e-14, maxit=50):
     raise ValueError("no convergence")
 ```
 
+#### Example by hand: root of $f(x) = x^2 - 2 = 0$
+Start with $x_0 = 1.0$ ($f(x_0) = -1$) and $x_1 = 2.0$ ($f(x_1) = +2$).
+- **Iteration 1**:
+  - Slope $s = \frac{f(x_1) - f(x_0)}{x_1 - x_0} = \frac{2 - (-1)}{2 - 1} = 3$.
+  - Next point $x_2 = x_1 - \frac{f(x_1)}{s} = 2.0 - \frac{2}{3} = \frac{4}{3} \approx \mathbf{1.3333}$.
+  - $f(x_2) = (4/3)^2 - 2 = 16/9 - 18/9 = -2/9 \approx -0.2222$.
+- **Iteration 2**:
+  - Slope between $x_1=2.0$ ($f=2$) and $x_2=4/3$ ($f=-2/9$):
+    $$s = \frac{-2/9 - 2}{4/3 - 2} = \frac{-20/9}{-2/3} = \frac{10}{3} \approx 3.3333$$
+  - Next point $x_3 = \frac{4}{3} - \frac{-2/9}{10/3} = \frac{4}{3} + \frac{2}{30} = \frac{42}{30} = \mathbf{1.4000}$.
+  - $f(x_3) = 1.4^2 - 2 = 1.96 - 2 = -0.04$ (rapidly approaching $\sqrt{2} \approx 1.4142$).
+
+#### Where it's used
+- **Financial mathematics (Implied Volatility / Yield-to-Maturity)**: Black-Scholes formula inversion has no simple closed-form derivative with respect to volatility; secant methods efficiently match market option prices.
+- **Complex black-box simulation calibration**: matching physical simulation outputs to sensor readings where the simulator is an opaque executable.
+
+---
+
 ### Fixed-point iteration — the unifying view
 
-Many iterations are x ← g(x). They converge if |g'(x*)| < 1 near the fixed point, with rate |g'| (smaller = faster; g'=0 → quadratic). Newton's method is exactly the choice g(x) = x − f/f' engineered so g'(x*) = 0. This is the lens that also explains why some numerical schemes converge and others don't.
+Rewrite $f(x) = 0$ as $x = g(x)$. The iteration is simply $x_{k+1} = g(x_k)$.
+**Banach Fixed-Point Theorem**: the sequence converges to $x^*$ if $|g'(x^*)| < 1$ in a neighborhood of the root. The smaller $|g'(x^*)|$, the faster the convergence. If $g'(x^*) = 0$, convergence is at least quadratic.
 
-## Where it's used
+#### Example by hand: solving $x = \cos(x)$ (the Dottie number)
+- Check derivative: $g(x) = \cos(x) \implies g'(x) = -\sin(x)$.
+- Near the root $x^* \approx 0.739$, $|g'(0.739)| = |\sin(0.739)| \approx 0.673 < 1 \implies$ guaranteed convergence!
+- Start with $x_0 = 1.0$ (radians):
+  - $x_1 = \cos(1.0) \approx \mathbf{0.5403}$
+  - $x_2 = \cos(0.5403) \approx \mathbf{0.8576}$
+  - $x_3 = \cos(0.8576) \approx \mathbf{0.6543}$
+  - $x_4 = \cos(0.6543) \approx \mathbf{0.7935} \to \dots \to 0.739085$
+- Spirals inward toward the fixed point with contractive factor $\approx 0.67$ per step.
 
-- **Physics engines / games**: ray–object intersection ("when does the ray hit the sphere") is root finding; collision event detection between timesteps is a bisection-style bracket search on the timeline.
-- **Robotics & graphics**: inverse kinematics solvers are Newton iterations on joint angles — this is why IK fails near singular configurations (Jacobian ≈ singular = f' ≈ 0).
-- **Finance**: implied volatility from option prices (invert Black–Scholes — no closed form, always a solver); bond yield-to-maturity from price.
-- **ML**: trust-region and line-search optimizers solve 1-D root problems per step; the `brentq`-style hybrid (safe bracket + fast secant steps) is the template for robust 1-D solves everywhere.
-- **Systems**: TCP congestion control and PID controllers implicitly solve for an equilibrium — convergence-rate intuition tells you why P-only controllers oscillate.
-
-## Dry run by hand
-
-**1.** Bisect √2 on [1, 2]: signs f(1)=−1, f(2)=+2.
-- m=1.5: f=+0.25 → root in [1, 1.5]
-- m=1.25: f=−0.4375 → root in [1.25, 1.5]
-- m=1.375: f=−0.109 → root in [1.375, 1.5]
-- m=1.4375: f=+0.066 → root in [1.375, 1.4375]
-
-Four steps, interval shrunk 2→0.0625. Each step buys exactly one bit — feel why "linear convergence" means ~3.3 steps per decimal digit.
-
-**2.** Newton on the same problem from x₀=1: x ← x − (x²−2)/2x = (x + 2/x)/2 (the ancient Babylonian method!).
-- x₁ = (1 + 2)/2 = 1.5, err ≈ 8.6e-2
-- x₂ = (1.5 + 1.333)/2 = 1.4167, err ≈ 2.5e-3
-- x₃ = 1.4142157, err ≈ 6e-6
-- x₄ = 1.4142135624, err ≈ 2e-12
-
-Errors: 1e-1 → 1e-3 → 1e-6 → 1e-12. Count the digits doubling — that *is* quadratic convergence, by hand.
-
-**3.** Conditioning feel: solve x² = 2 exactly, then x² = 2.001. Root moves by ≈ 0.001/(2·1.414) ≈ 3.5e-4 — the √ function at 2 is well-conditioned. Now x⁸ = 1 vs x⁸ = 1.01: root moves from 1 to 1.0012 — wait, try x⁸ = 2 vs x⁸ = 2·(1+1e-3): relative root move = 1e-3/8, tiny. But near a *flat* root (x−1)⁸ = 0 vs (x−1)⁸ = 1e-8: root jumps to 1.1. Same solver, wildly different sensitivity — κ belongs to the problem.
+#### Where it's used
+- **Google PageRank**: computing stationary state probabilities $\mathbf{p} = \mathbf{M}\mathbf{p}$ via power iteration is literally linear fixed-point iteration.
+- **Reinforcement Learning (Value Iteration)**: solving Bellman equations $V(s) = \max_a \sum P(s'|s,a)[R + \gamma V(s')]$ converges because the discount factor $\gamma < 1$ makes the Bellman backup operator a contraction mapping.
 
 ## Gotchas
 

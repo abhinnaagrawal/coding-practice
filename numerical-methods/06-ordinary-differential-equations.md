@@ -6,7 +6,8 @@ Problem: y'(t) = f(t, y), y(t₀) = y₀ — given the slope field and a startin
 
 ## Euler — the prototype (and its fatal honesty)
 
-Step along the current slope: y ← y + h·f(t, y).
+Step along the current slope:
+$$y_{k+1} = y_k + h \cdot f(t_k, y_k)$$
 
 ```python
 def euler(f, t0, y0, h, n):
@@ -25,11 +26,35 @@ for h in (0.1, 0.01, 0.001):
 # 0.001 2.7169  err 0.0013
 ```
 
-Global error O(h): linear convergence — to halve the error, double the work. Euler is the "bisection" of ODE solvers: conceptually complete, practically weak.
+Global error $O(h)$: linear convergence — to halve the error, double the work.
+
+### Example by hand: solving $y' = 2y, \quad y(0) = 1$ with $h = 0.1$
+Exact analytical solution is $y(t) = e^{2t}$.
+- **Step 1 ($t_0 = 0 \to t_1 = 0.1$)**:
+  - Slope $f(0, 1) = 2(1) = 2.0$.
+  - $y_1 = y_0 + h \cdot f(t_0, y_0) = 1.0 + 0.1(2.0) = \mathbf{1.2000}$.
+  - Exact: $e^{0.2} \approx 1.2214$ (error $= 0.0214$).
+- **Step 2 ($t_1 = 0.1 \to t_2 = 0.2$)**:
+  - Slope $f(0.1, 1.2) = 2(1.2) = 2.4$.
+  - $y_2 = y_1 + h \cdot f(t_1, y_1) = 1.2 + 0.1(2.4) = \mathbf{1.4400}$.
+  - Exact: $e^{0.4} \approx 1.4918$ (error $= 0.0518$).
+- Notice the step underestimate: because the true curve curves upward, evaluating slope only at the beginning of the step consistently underestimates growth.
+
+### Where it's used
+- **Game physics / basic character controller kinematics**: position integration $\mathbf{p} \leftarrow \mathbf{p} + \mathbf{v}\Delta t$ where speed and predictability matter more than high-precision trajectory fidelity.
+- **Microcontroller embedded simulations**: small sensors running simple real-time filter integrations where compute is severely constrained.
+
+---
 
 ## The Runge-Kutta ladder
 
-Sample the slope field *several times per step* and blend — a higher-order local model (day 3's thread again). The classic **RK4**: four slope samples, error O(h⁴):
+Sample the slope field *several times per step* and blend — a higher-order local model.
+The classic **RK4** (4 slope samples per step, error $O(h^4)$):
+1. $k_1 = f(t_n, y_n)$ (slope at start)
+2. $k_2 = f(t_n + \frac{h}{2}, y_n + \frac{h}{2}k_1)$ (trial slope at midpoint)
+3. $k_3 = f(t_n + \frac{h}{2}, y_n + \frac{h}{2}k_2)$ (refined slope at midpoint)
+4. $k_4 = f(t_n + h, y_n + h k_3)$ (trial slope at end)
+$$y_{n+1} = y_n + \frac{h}{6}(k_1 + 2k_2 + 2k_3 + k_4)$$
 
 ```python
 def rk4(f, t0, y0, h, n):
@@ -50,11 +75,28 @@ for h in (0.1, 0.01):
 # 0.01  err 1.3e-10    ← ×10 steps → ÷10000 error (4th order visible)
 ```
 
-Same f-evaluations as 4 Euler steps, ~4–5 orders more accuracy. This is why nobody ships Euler.
+### Example by hand: one step of RK4 on $y' = y, \quad y(0) = 1$ with $h = 0.2$
+- $k_1 = f(0, 1) = \mathbf{1.0}$
+- $k_2 = f(0 + 0.1, 1 + 0.1(1.0)) = f(0.1, 1.1) = \mathbf{1.1}$
+- $k_3 = f(0 + 0.1, 1 + 0.1(1.1)) = f(0.1, 1.11) = \mathbf{1.11}$
+- $k_4 = f(0 + 0.2, 1 + 0.2(1.11)) = f(0.2, 1.222) = \mathbf{1.222}$
+- Weighted blend:
+  $$y_1 = 1.0 + \frac{0.2}{6}(1.0 + 2(1.1) + 2(1.11) + 1.222) = 1.0 + \frac{0.2}{6}(6.642) = 1.0 + 0.2214 = \mathbf{1.221400}$$
+- Compare to exact solution: $e^{0.2} = \mathbf{1.221402758\dots}$
+- Error after a large step of $h=0.2$ is only $2.7 \times 10^{-6}$!
 
-## Stability — the part Euler honesty reveals
+### Where it's used
+- **Flight simulators & vehicle dynamics**: high-fidelity 6-DOF aircraft simulation where aerodynamics require smooth, highly accurate trajectory tracking.
+- **Generative AI (Continuous Normalizing Flows & Diffusion Sampling)**: diffusion models integrate a reverse-time probability flow ODE where high-order solvers reduce the number of model evaluations needed to generate an image.
 
-Accuracy isn't the killer; **stability** is. Test equation: y' = λy (decay, λ < 0). Exact solution decays. Euler gives yₙ = (1 + hλ)ⁿ — which **blows up if |1 + hλ| > 1**, i.e. h > 2/|λ|:
+---
+
+## Stability & Stiff equations
+
+Accuracy isn't the killer; **stability** is.
+Test equation: $y' = \lambda y$ (decay, $\lambda < 0$).
+- Forward Euler gives: $y_{n+1} = (1 + h\lambda) y_n$.
+- Blows up if $|1 + h\lambda| > 1 \implies h > \frac{2}{|\lambda|}$!
 
 ```python
 import math
@@ -65,54 +107,47 @@ for h in (0.01, 0.05):
 # 0.05  -2.9e+10        EXPLODED (1 + hλ = -1.5, |·|>1 → growing oscillation)
 ```
 
-The true solution is ≈ 0 and Euler produces −3×10¹⁰. Not inaccurate — *qualitatively wrong*. This is a **stiff** problem when it has multiple timescales (fast transient λ=−50 plus slow dynamics): explicit methods must size h to the *fast* scale even after it has decayed — ruinously small steps.
+The true solution is ≈ 0 and Euler produces −3×10¹⁰. This is a **stiff** problem.
 
-**Fix: implicit methods.** Backward Euler: y ← y + h·f(t+h, y_new) — solve an equation each step (Newton from day 2!) but unconditionally stable for decay problems:
+**Fix: Backward (Implicit) Euler**: evaluate slope at the *future* point:
+$$y_{n+1} = y_n + h f(t_{n+1}, y_{n+1}) \implies y_{n+1} = \frac{y_n}{1 - h\lambda}$$
+Because $|1 - h\lambda| > 1$ for all $h > 0$ when $\lambda < 0$, Backward Euler is **unconditionally stable** for any step size $h$!
 
-```python
-def backward_euler_exp( lam, y0, h, n):      # closed form for y' = λy
-    return y0 * (1/(1 - h*lam))**n
-print(backward_euler_exp(-50, 1.0, 0.05, 20))   # 2.1e-20 — fine at h that killed Euler
-```
+### Example by hand: solving $y' = -100y, \quad y(0) = 1$ with $h = 0.1$
+Exact solution at $t = 0.1$: $y(0.1) = e^{-10} \approx 4.54 \times 10^{-5}$.
+1. **Forward Euler**:
+   $$y_1 = y_0 + h(-100 y_0) = 1 + 0.1(-100)(1) = 1 - 10 = \mathbf{-9.0}$$
+   Result exploded in the wrong direction with inverted sign!
+2. **Backward Euler**:
+   $$y_1 = y_0 + h(-100 y_1) \implies y_1(1 + 10) = 1 \implies y_1 = \frac{1}{11} \approx \mathbf{0.0909}$$
+   Stable exponential decay preserved, zero explosion, regardless of large step size $h$.
 
-Trade-off summary:
+### Where it's used
+- **Chemical kinetics & combustion simulation**: reactions with fast-decaying intermediate radicals alongside slow main reactions (timescales differ by $10^6$).
+- **Heat transfer & SPICE circuit simulation**: RC network time constants spanning microseconds to seconds.
 
-| | Explicit (Euler, RK4) | Implicit (Backward Euler, Radau) |
-|---|---|---|
-| Cost/step | cheap (f evals) | expensive (solve nonlinear system per step) |
-| Step limit | h bounded by **stability** | h bounded only by **accuracy** |
-| Use for | smooth, non-stiff | stiff, multiple timescales |
+---
 
-`scipy.integrate.solve_ivp` defaults: `RK45` (adaptive RK) for general use, `BDF`/`Radau` for stiff.
+## Symplectic integrators — energy conservation in physics
 
-## Adaptive stepping & symplectic note
+Standard RK4 slowly drifts energy (dissipates or adds artificial energy over millions of orbits).
+**Symplectic (Semi-Implicit) Euler** updates velocity with old position, then position with the **new** velocity:
+$$v_{n+1} = v_n + h \cdot a(x_n), \quad x_{n+1} = x_n + h \cdot v_{n+1}$$
 
-Production solvers estimate error per step (embedded RK pair — two orders from shared evaluations, Richardson-style) and grow/shrink h automatically. Two more names worth recognizing: **symplectic integrators** (leapfrog/Verlet) conserve energy over long Hamiltonian simulations where RK4 slowly drains it — the reason orbital mechanics doesn't use RK4 naively.
+### Example by hand: Harmonic oscillator ($x' = v, \quad v' = -x$) with $h = 1.0$, start $(x_0, v_0) = (1, 0)$
+Initial total energy: $E_0 = \frac{1}{2}(x_0^2 + v_0^2) = \frac{1}{2}(1 + 0) = \mathbf{0.50}$.
+1. **Explicit Forward Euler**:
+   - $x_1 = x_0 + h v_0 = 1 + 1(0) = 1$
+   - $v_1 = v_0 + h (-x_0) = 0 + 1(-1) = -1$
+   - $E_1 = \frac{1}{2}(1^2 + (-1)^2) = \mathbf{1.00}$ ($\mathbf{100\% \text{ energy gain!}}$ Trajectory spirals outward to infinity).
+2. **Symplectic Euler**:
+   - $v_1 = v_0 + h (-x_0) = 0 + 1(-1) = -1$
+   - $x_1 = x_0 + h v_1 = 1 + 1(-1) = \mathbf{0}$ (used new $v_1$!)
+   - $E_1 = \frac{1}{2}(0^2 + (-1)^2) = \mathbf{0.50}$ ($\mathbf{\text{Energy exactly preserved!}}$).
 
-## Where it's used
-
-- **Games & animation**: position ← velocity integration every frame; semi-implicit (symplectic) Euler is the default because explicit Euler makes springs explode and orbits spiral out — the energy behavior in exercise 2 is felt by every game developer.
-- **Robotics & control**: quadrotor trajectory simulation, PID loops (discretized ODEs), model-predictive control rolls forward dynamics with RK each control tick.
-- **ML**: neural ODEs; gradient descent *is* Euler on θ' = −∇f (day 7); diffusion model sampling is reverse-time ODE/SDE integration — solver order directly buys sample quality per step.
-- **Epidemiology & pharma**: SIR compartment models, drug concentration kinetics (the canonical stiff system — fast absorption, slow elimination).
-- **Aerospace**: orbit propagation uses symplectic or high-order adaptive integrators; RK4 naive drains orbital energy over long horizons.
-- **Electrical engineering**: SPICE circuit simulators live and die on stiff transient analysis — backward differentiation (BDF) is the workhorse.
-
-## Dry run by hand
-
-**1.** Euler on y' = y from (0, 1) with h = 0.5, four steps:
-- y₁ = 1 + 0.5·1 = 1.5 → y₂ = 1.5 + 0.5·1.5 = 2.25 → y₃ = 3.375 → y₄ = 5.0625
-- Exact e² = 7.389. Underestimate — makes sense: the slope *grows* along the true curve, but Euler keeps each step's starting slope for the whole step. Trace it on paper: piecewise-linear segments falling progressively behind the curve.
-
-**2.** RK4's first step on the same problem, h = 0.5:
-- k1 = f(0, 1) = 1
-- k2 = f(0.25, 1 + 0.25) = 1.25
-- k3 = f(0.25, 1 + 0.3125) = 1.3125
-- k4 = f(0.5, 1 + 0.65625) = 1.65625
-- y₁ = 1 + (0.5/6)(1 + 2·1.25 + 2·1.3125 + 1.65625) = 1 + (0.5/6)(7.781) = 1.6484
-- Exact e^0.5 = 1.6487. One step, 4 f-evals, error 3e-4 — vs Euler's error 0.15 for the same h. Feel the midpoint samples doing the work.
-
-**3.** Stability by hand, y' = −10y, h = 0.25: amplification factor 1 + hλ = 1 − 2.5 = **−1.5**. Starting y₀ = 1: y₁ = −1.5, y₂ = +2.25, y₃ = −3.375 — growing with alternating sign. The true answer decays to e^−2.5 ≈ 0.08. The sign flip is the fingerprint: solution crosses zero each step because the step overshoots it. That oscillation in a sim output = instability, instantly diagnosable by hand.
+### Where it's used
+- **Astrophysics & Solar System N-body simulators**: simulating planetary orbits over billions of years without planets falling into the sun.
+- **Molecular Dynamics (Verlet algorithm)**: simulating protein folding where artificial energy gain breaks chemical bonds.
 
 ## Gotchas
 
