@@ -44,6 +44,15 @@
   - [06. ODEs](numerical-methods/06-ordinary-differential-equations.md)
   - [07. Numerical Optimization](numerical-methods/07-numerical-optimization.md)
 
+- AI & Search Systems
+  - [Overview](ai-search-systems/README.md)
+  - [01. Text Processing](ai-search-systems/text-processing.md)
+  - [02. Embeddings](ai-search-systems/embeddings.md)
+  - [03. HNSW](ai-search-systems/hnsw.md)
+  - [04. Vector Databases](ai-search-systems/vector-databases.md)
+  - [05. RAG](ai-search-systems/rag.md)
+  - [06. Vectorless RAG](ai-search-systems/vectorless-rag.md)
+
 - Book Summaries
   - [Overview](book-summaries/README.md)
   - Deep Learning (Goodfellow et al.)

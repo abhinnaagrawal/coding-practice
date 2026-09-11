@@ -9,6 +9,7 @@ Personal reference site — one docsify deployment, multiple content sections. P
 - **[Coding Practice](/coding-practice/README.md)** — senior/staff FAANG+ coding interview pattern reference: 19 categories, each with recognition signals, gotchas, a company-frequency-ranked problem list, and commented Python solutions.
 - **[Python Tutorial](/python-tutorial/README.md)** — Python in one day for C/Java/Bash engineers: 9 chapters framed as diffs against what you already know, interview-first ordering, gotcha checklists, and micro-exercises per chapter.
 - **[Numerical Methods](/numerical-methods/README.md)** — numerical methods intuition in one week: floating point, root finding, interpolation, numerical linear algebra, differentiation/integration, ODEs, and optimization, each with runnable Python and open-access deep dives.
+- **[AI & Search Systems](/ai-search-systems/README.md)** — practical reference for text processing, embeddings, HNSW, vector databases, RAG, and non-vector retrieval patterns such as BM25, graph traversal, and SQL.
 - **[Book Summaries](/book-summaries/README.md)** — lesson-style notes working through technical books.
 
 ## How this repo is structured
@@ -25,6 +26,8 @@ Personal reference site — one docsify deployment, multiple content sections. P
 │   └── 01-setup-and-running-code.md … 09-advanced-decorators-context-managers-typing.md
 ├── numerical-methods/          section: numerical methods intuition (see numerical-methods/README.md)
 │   └── 01-number-representation.md … 07-numerical-optimization.md
+├── ai-search-systems/          section: RAG and search systems (see ai-search-systems/README.md)
+│   └── text-processing.md, embeddings.md, hnsw.md, vector-databases.md, rag.md, vectorless-rag.md
 └── book-summaries/             section: book notes (see book-summaries/README.md)
     └── deep-learning-book/
         └── 01-introduction.md … 06-machine-learning-basics-part2.md
