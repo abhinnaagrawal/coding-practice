@@ -53,6 +53,70 @@
   - [05. RAG](ai-search-systems/rag.md)
   - [06. Vectorless RAG](ai-search-systems/vectorless-rag.md)
 
+- Systems Engineering
+  - [Overview](systems-engineering/README.md)
+  - Distributed Systems
+    - [Consensus: Raft vs Paxos](systems-engineering/distributed-systems/consensus-raft-vs-paxos.md)
+    - [Consistent Hashing](systems-engineering/distributed-systems/consistent-hashing.md)
+    - [Distributed Transactions](systems-engineering/distributed-systems/distributed-transactions.md)
+    - [Consistency Models](systems-engineering/distributed-systems/consistency-models.md)
+    - [Clocks & Ordering](systems-engineering/distributed-systems/clocks-and-ordering.md)
+    - [Fallacies of Distributed Computing](systems-engineering/distributed-systems/fallacies-of-distributed-computing.md)
+  - Data Formats
+    - [Parquet](systems-engineering/data-formats/parquet.md)
+    - [Apache Iceberg](systems-engineering/data-formats/apache-iceberg.md)
+    - [Delta Lake](systems-engineering/data-formats/delta-lake.md)
+    - [Z-Ordering](systems-engineering/data-formats/z-ordering.md)
+    - [Liquid Clustering](systems-engineering/data-formats/liquid-clustering.md)
+  - Data Architecture
+    - [Data Platform Architectures](systems-engineering/data-architecture/data-platform-architectures.md)
+  - Data Modeling
+    - [Star Schema & Dimensional Modeling](systems-engineering/data-modeling/star-schema-dimensional-modeling.md)
+  - Data Structures
+    - [LSM Trees](systems-engineering/data-structures/lsm-trees.md)
+    - [RocksDB](systems-engineering/data-structures/rocksdb.md)
+    - [Roaring Bitmaps](systems-engineering/data-structures/roaring-bitmaps.md)
+  - Authorization
+    - [Zanzibar](systems-engineering/authz/zanzibar.md)
+    - [SpiceDB](systems-engineering/authz/spicedb.md)
+  - Caching
+    - [Redis vs Memcached](systems-engineering/caching/redis-vs-memcached.md)
+  - Coordination
+    - [etcd](systems-engineering/coordination/etcd.md)
+  - Storage
+    - [Hadoop (HDFS + YARN)](systems-engineering/storage/hadoop.md)
+    - [Postgres](systems-engineering/storage/postgres.md)
+    - [S3](systems-engineering/storage/s3.md)
+    - [Cassandra](systems-engineering/storage/cassandra.md)
+  - Streaming
+    - [Kafka](systems-engineering/streaming/kafka.md)
+    - [Debezium](systems-engineering/streaming/debezium.md)
+  - Query Engines
+    - [DuckDB](systems-engineering/query-engines/duckdb.md)
+    - [OpenSearch](systems-engineering/query-engines/opensearch.md)
+    - [ClickHouse](systems-engineering/query-engines/clickhouse.md)
+    - [Trino](systems-engineering/query-engines/trino.md)
+  - Orchestration
+    - [Airflow Internals](systems-engineering/orchestration/airflow-internals.md)
+    - [Argo Workflows](systems-engineering/orchestration/argo-workflows.md)
+    - [Argo Rollouts](systems-engineering/orchestration/argo-rollouts.md)
+    - [Argo Events](systems-engineering/orchestration/argo-events.md)
+    - [KEDA](systems-engineering/orchestration/keda.md)
+    - [Karpenter](systems-engineering/orchestration/karpenter.md)
+    - [Cluster Schedulers](systems-engineering/orchestration/cluster-schedulers.md)
+  - Compute
+    - [Spark](systems-engineering/compute/spark.md)
+    - [Spark on EKS](systems-engineering/compute/spark-on-eks.md)
+    - [Flink](systems-engineering/compute/flink.md)
+    - [Spark Structured Streaming](systems-engineering/compute/spark-structured-streaming.md)
+  - Networking
+    - [Networking Layers](systems-engineering/networking/networking-layers.md)
+    - [gRPC](systems-engineering/networking/grpc.md)
+  - Reliability
+    - [Multi-AZ, DR & Failure Patterns](systems-engineering/reliability/multi-az-dr-and-failure-patterns.md)
+  - Performance
+    - [Resource-Layer Crux Guide](systems-engineering/performance/resource-layer-crux-guide.md)
+
 - Book Summaries
   - [Overview](book-summaries/README.md)
   - Deep Learning (Goodfellow et al.)
