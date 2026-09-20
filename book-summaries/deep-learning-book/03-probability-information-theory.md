@@ -2,215 +2,132 @@
 
 Based on: Goodfellow, Bengio, Courville — *Deep Learning*, Chapter 3 (original explanation, not excerpted)
 
-Lesson 2 gave you the mechanical vocabulary — vectors, matrices, the operations a layer actually performs. But matrix multiplication alone doesn't explain why a network's output looks like "73% cat, 27% dog" instead of a flat "cat." That's probability's job. This lesson is about the second language deep learning speaks fluently: the math of uncertainty, and — near the end — the specific piece of it (cross-entropy) that you'll see again the moment we start training real models.
+Lesson 2 gave you the mechanical vocabulary — vectors, matrices, the operations a layer actually performs. But matrix multiplication alone doesn't explain why your incident classifier's output looks like "P(incident) = 0.83" instead of a flat "yes." That's probability's job — the second language deep learning speaks fluently, and the one that ends, near the close of this lesson, in cross-entropy: the exact quantity you'll watch go down every time you train a real model.
+
+**Before I explain — guess:** why would a classifier output "0.83" instead of just "yes, incident" — what would you actually lose by forcing it to commit to a hard yes/no?
 
 ## Why Probability Shows Up At All
 
-As a backend engineer, you're used to systems where inputs map to outputs deterministically, and uncertainty is something you handle explicitly — retries, timeouts, circuit breakers — as a bolt-on to otherwise predictable logic. Deep learning is different: uncertainty isn't bolted on, it's baked into the core object the model produces.
+As a backend engineer, you're used to systems where uncertainty is handled explicitly — retries, timeouts, circuit breakers — as a bolt-on to otherwise deterministic logic. Deep learning is different: uncertainty isn't bolted on, it's baked into the object the model produces.
 
-There are two separate reasons probability shows up.
+Two separate reasons. First, the *task itself* is uncertain: a minute with slightly elevated error rate and normal everything else isn't cleanly "incident" or "not" — it's ambiguous, the same way a borderline email isn't cleanly spam or not. A classifier that outputs "0.83" is being honest about that ambiguity, and the number is useful downstream — page immediately above 0.9, log-and-watch between 0.5 and 0.9, ignore below that. Force it to output a hard 0/1 and you throw away exactly the information an on-call engineer would want.
 
-First, the *task itself* is uncertain. If you ask a model "is this email spam," there usually isn't a fact of the matter that's knowable from the text alone with 100% certainty — some emails are genuinely ambiguous. A model that's forced to output a hard 0 or 1 is pretending to know something it doesn't. A model that outputs "spam: 0.92" is being honest about its confidence, and that number turns out to be enormously useful downstream (you can set a threshold, flag borderline cases for review, combine it with other signals).
+Second, *training itself* is a randomized process — weights start random, each step samples a random mini-batch, later architectures randomly disable neurons on purpose (dropout). None of this is a bug; it's a deliberate design choice, the same way you might inject randomized jitter into retry backoff on purpose.
 
-Second, *training itself* is a randomized process, in the same sense a randomized algorithm in distributed systems is. Weights start from random values. Each training step looks at a random mini-batch of examples rather than the whole dataset (stochastic gradient descent — we'll get to this properly later). Later architectures randomly disable neurons during training (dropout) purely to prevent overfitting. None of this randomness is a bug to eliminate; it's a deliberate design choice, the same way you might inject randomized jitter into retry backoff on purpose.
-
-So probability enters deep learning at two layers: it's the *language the model's output is expressed in*, and it's a *tool used during the training process itself*.
+So probability enters at two layers: it's the *language the model's output is expressed in*, and it's a *tool used during training itself*.
 
 ## Random Variables and Distributions
 
-A random variable is just a quantity whose value isn't fixed — it's drawn from some set of possibilities according to certain likelihoods. A probability distribution is the full accounting of those likelihoods: for every possible value, how likely is it?
+A random variable is a quantity whose value isn't fixed — it's drawn according to some set of likelihoods. A probability distribution is the full accounting of those likelihoods: for every possible value, how likely is it?
 
-There are two flavors, and the distinction matters mechanically:
-
-**Discrete** — the variable takes one of a finite (or countable) list of values. Our spam classifier is a clean example: the output isn't really "spam" or "not spam" as a binary fact, it's a distribution over the two-item set `{spam, not-spam}`:
+**Discrete** — a finite (or countable) list of values. Our incident classifier's output is exactly this: not a binary fact but a distribution over `{incident, normal}`:
 
 ```
-P(spam)     = 0.92
-P(not-spam) = 0.08
+P(incident) = 0.83
+P(normal)   = 0.17
 ```
 
-Note the two numbers sum to 1 — that's the defining property of a valid probability distribution over discrete outcomes. If your model spits out numbers that don't sum to 1, something in your last layer is wrong (this is literally what the softmax function exists to guarantee, which we'll hit later).
+The two numbers sum to 1 — the defining property of a valid discrete distribution. If your model's output layer ever produced numbers that didn't sum to 1, something upstream is broken (this is literally what softmax exists to guarantee, later in the series).
 
-**Continuous** — the variable can take any value in a range, like a real number. "How many milliseconds will this API call take?" isn't well described by a short list — it's smeared across a continuum. You can't assign a nonzero probability to *exactly* 42.0000000ms (there are infinitely many nearby values competing for that same sliver of probability mass), so instead you describe a *density* — a curve where the area under any interval tells you the probability of landing in that interval. This is the practical difference between a PMF (probability mass function, for discrete variables — direct probabilities) and a PDF (probability density function, for continuous variables — you integrate to get an actual probability).
+**Continuous** — the variable can take any value in a range. "How many milliseconds will this request take?" isn't a short list, it's smeared across a continuum — you can't assign nonzero probability to *exactly* 42.0000ms, so you describe a *density* instead: a curve where area under an interval gives you probability. That's the practical difference between a PMF (discrete, direct probabilities) and a PDF (continuous, integrate to get a probability).
 
-Deep learning uses both constantly: classification outputs are discrete distributions over a fixed label set; predicting a continuous quantity (a stock price, a pixel intensity, a robot joint angle) uses continuous distributions.
+Deep learning uses both: classification outputs (like our classifier's incident/normal call) are discrete distributions; predicting a continuous quantity (predicted latency itself, a pixel intensity) uses continuous ones.
 
 ## Expectation and Variance
 
-Once you have a distribution, two numbers summarize a lot about it.
-
-**Expectation** is the long-run average — if you sampled from this distribution forever and averaged the results, what would you converge to? For a fair six-sided die, the expectation is 3.5, even though 3.5 is never a value you can actually roll. It's a weighted average across all outcomes, weighted by how likely each one is.
-
-**Variance** measures spread — how far, typically, do individual draws stray from that average? Two models can have identical expected accuracy — or identical expected latency — but wildly different variance, and that difference matters enormously in practice. Formally, variance is the expectation of the squared deviation from the mean: for each observed value, subtract the mean, square the result (so negative and positive deviations don't cancel out), and average those squares.
+**Expectation** is the long-run average — sample forever, average the results, converge to this. **Variance** measures spread — how far individual draws typically stray from that average, formally the average of the squared deviation from the mean.
 
 ### Worked example: same average latency, very different variance
 
-Suppose you're evaluating two latency-prediction models by comparing their predicted latency (ms) against 5 real requests. Both models' predictions average out to exactly 100ms. Here are the actual numbers:
+Two latency-prediction models, evaluated against 5 real requests, both averaging exactly 100ms predicted:
 
-**Model A's predictions:** 98, 102, 99, 101, 100
+**Model A:** 98, 102, 99, 101, 100 → mean 100. Deviations: −2,+2,−1,+1,0 → squared: 4,4,1,1,0 → sum 10 → **variance 2** (σ ≈ 1.41ms).
 
-Mean: (98 + 102 + 99 + 101 + 100) / 5 = 500 / 5 = **100**
+**Model B:** 40, 160, 20, 180, 100 → mean 100. Deviations: −60,+60,−80,+80,0 → squared: 3600,3600,6400,6400,0 → sum 20000 → **variance 4000** (σ ≈ 63.2ms).
 
-Deviations from the mean: −2, +2, −1, +1, 0
-Squared deviations: 4, 4, 1, 1, 0
-Sum of squared deviations: 4 + 4 + 1 + 1 + 0 = 10
-Variance: 10 / 5 = **2**
-(Standard deviation, the square root of variance: √2 ≈ **1.41ms**)
+Identical mean, 2000x different variance. Model A is tight and boring near 100ms every time; Model B is "right on average" but wildly optimistic or pessimistic on any *given* request — exactly the p50=100ms/p99=150ms vs. p50=100ms/p99=4s distinction that matters for setting real SLAs. The mean hides exactly what variance reveals.
 
-**Model B's predictions:** 40, 160, 20, 180, 100
+## Two Distributions Worth Knowing By Name
 
-Mean: (40 + 160 + 20 + 180 + 100) / 5 = 500 / 5 = **100**
+**Bernoulli** — a single yes/no draw with probability `p` for "yes," `1-p` for "no." One parameter, fully described: `P(x=1) = p`, `P(x=0) = 1-p`. This is exactly the shape of our incident classifier's output for one minute: if historically 12% of minutes across your fleet are incidents, your *prior* — before looking at this minute's metrics at all — is a Bernoulli distribution with `p = 0.12`. Every binary classifier you build is, at its output layer, producing the parameter `p` of a Bernoulli distribution per example (a spam filter's `P(spam)=0.3` prior is the identical shape, just a different domain).
 
-Deviations from the mean: −60, +60, −80, +80, 0
-Squared deviations: 3600, 3600, 6400, 6400, 0
-Sum of squared deviations: 3600 + 3600 + 6400 + 6400 + 0 = 20000
-Variance: 20000 / 5 = **4000**
-(Standard deviation: √4000 ≈ **63.2ms**)
-
-Both models have an identical mean prediction of 100ms — if you only reported "average predicted latency," they'd look indistinguishable. But Model A's variance is 2 (a tight, boring cluster of predictions within a couple milliseconds of the mean), while Model B's variance is 4000 — two thousand times larger — because it swings wildly between confidently-fast (20–40ms) and confidently-slow (160–180ms) predictions that happen to average out. In production, Model A tells you something useful and stable every time; Model B is right "on average" but is either wildly optimistic or wildly pessimistic on any *given* request, which is far more dangerous for anything downstream that sets timeouts or SLAs based on the prediction. This is the numeric version of preferring p50=100ms/p99=150ms over an equal-average service with p99=4s: the mean hides exactly the information that variance reveals.
-
-## A Few Distributions Worth Knowing By Name
-
-You don't need to memorize a catalog, but two distributions come up so often in deep learning that recognizing them by name and shape pays off immediately.
-
-**Bernoulli** — the distribution of a single coin flip with a possibly-unfair coin: outcome is one of two values, with probability `p` for one and `1-p` for the other. This is exactly the shape of a binary classifier's output (spam / not-spam), and it's the simplest possible distribution — one parameter, `p`, fully describes it. The formula is barely a formula at all: `P(x) = p` if `x = 1` (the "yes" outcome), and `P(x) = 1 - p` if `x = 0` (the "no" outcome).
-
-Concretely: suppose your organization's historical spam rate is `p = 0.3` — 30% of incoming mail is spam, before you've looked at any specific email. That prior belief *is* a Bernoulli distribution with `p = 0.3`:
-
-```
-P(spam)     = p     = 0.3
-P(not-spam) = 1 - p = 1 - 0.3 = 0.7
-```
-
-That's the entire distribution — two numbers, one parameter, done. Every binary classifier you build is, at its output layer, producing the parameter `p` of a Bernoulli distribution for each example.
-
-**Gaussian (Normal)** — the familiar bell curve, described by just two numbers: a mean (where the peak sits) and a variance (how wide the bell is). This is the single most common distribution in all of statistics and deep learning, and it's worth having real intuition for *why* it shows up everywhere, and for what its two parameters actually *do* to the shape.
-
-The mean just slides the whole curve left or right along the axis — it doesn't change the shape, only the location of the peak. The variance is the interesting one: it controls how "confident" or "spread out" the curve is. A **small variance** produces a tall, narrow bell — most of the probability mass is crammed close to the mean, so draws from the distribution are almost always close to that central value (think: a well-calibrated sensor with tight, low-noise measurement error clustered right around zero). A **large variance** produces a short, wide, flattened bell — the mass is smeared over a much broader range, so draws are frequently far from the mean in either direction (think: a noisy sensor, or a rough initial guess before you've gathered much evidence). Same mean, same peak location — but a narrow-variance Gaussian says "I'm quite sure the answer is right here," while a wide-variance Gaussian says "the answer is somewhere in this much bigger neighborhood, don't hold me to the center."
-
-The intuition for *why* the shape shows up everywhere, loosely: whenever some quantity you're measuring is the sum (or average) of a large number of small, mostly-independent random effects, the result tends toward a bell curve, almost regardless of what the individual effects looked like. This is the central limit theorem, and you don't need the proof to use the intuition — think of it like a load-balancing effect. If a single request's latency depends on dozens of small independent factors (cache state, network jitter, GC pauses, disk contention), no single factor dominates, and the aggregate settles into a predictable bell-shaped pattern. Nature and engineered systems are both full of quantities built from many small independent contributions — measurement noise, human heights, aggregated network delay — so the Gaussian shows up constantly as a reasonable default assumption when you don't have a specific reason to expect something else.
-
-Deep learning leans on the Gaussian for two very practical reasons. First, when we assume "noise" in a model — the gap between a prediction and the true answer — behaves like a Gaussian, a lot of the resulting math (loss functions, likelihood calculations) simplifies beautifully; this is the assumption baked into ordinary mean-squared-error loss, which we'll meet directly in a later lesson. Second, when you initialize a network's weights before training even starts, you need *some* starting distribution, and small random values drawn from a Gaussian (centered at zero, modest variance — a narrow bell, not a wide one) is the standard, well-behaved default — it breaks the symmetry between neurons (so they don't all learn the identical thing) without starting anyone off at an extreme, unstable value.
+**Gaussian (Normal)** — the bell curve, described by a mean (peak location) and a variance (width). The mean just slides the curve; the variance controls confidence — small variance is a tall narrow bell (draws cluster near the mean, like a low-noise metric), large variance is short and wide (draws scatter, like a noisy one). Loosely, whenever a quantity is the sum of many small independent effects — request latency shaped by cache state, network jitter, GC pauses, disk contention, none dominating — the result tends toward this bell shape (the central limit theorem; think of it as a load-balancing effect on randomness). Deep learning leans on it for two reasons: assuming Gaussian noise around a prediction is what makes ordinary mean-squared-error loss work cleanly (a later lesson), and weight initialization uses small Gaussian-drawn random values to break symmetry between neurons without starting anyone at an unstable extreme.
 
 ## Bayes' Rule: Updating Belief With Evidence
 
-Bayes' rule answers a question you already reason about informally: given some new evidence, how should I revise a belief I already held?
+Bayes' rule formalizes something you already do informally: given new evidence, how should you revise a belief you already held?
 
-Concretely: your spam filter starts with some baseline belief that any given incoming email is spam — say, historically, 30% of your mail is spam, `P(spam) = 0.3`. That's your **prior**. Now you observe a specific piece of evidence: the email contains the word "free." You know from experience that spam emails use the word "free" far more often than legitimate ones do. Bayes' rule tells you exactly how to combine your prior belief with this new evidence to get an updated belief — your **posterior**: given that this email contains "free," what's the revised probability it's spam?
+**Before I explain — guess:** your classifier's prior is P(incident) = 0.12 for any random minute. You then observe evidence — sustained error-rate creep over the last 3 minutes, which historically shows up in 55% of real incidents but only 4% of normal minutes. Do you think the posterior P(incident | this evidence) lands closer to 0.12 still, or much higher — and roughly how would you combine those three numbers to find out?
 
-Bayes' rule, written out:
-
-```
-P(spam | word) = P(word | spam) × P(spam)
-                 ───────────────────────────
-                          P(word)
-```
-
-where the denominator, `P(word)`, is just a normalizing constant that spreads across both hypotheses — you compute it as `P(word | spam) × P(spam) + P(word | not-spam) × P(not-spam)`, so everything still sums to 1 at the end.
-
-### Worked example
-
-Let's plug in made-up but internally consistent numbers:
-
-- Prior: `P(spam) = 0.3`, so `P(not-spam) = 0.7`
-- From historical data: `P("free" | spam) = 0.5` (half of all spam contains the word "free")
-- From historical data: `P("free" | not-spam) = 0.1` (only 10% of legitimate mail contains it)
-
-First, compute the numerator — how likely is it that an email is *both* spam *and* contains "free"?
+Bayes' rule:
 
 ```
-P("free" | spam) × P(spam) = 0.5 × 0.3 = 0.15
+P(incident | evidence) = P(evidence | incident) × P(incident)
+                          ────────────────────────────────────
+                                    P(evidence)
 ```
 
-Next, compute the same joint quantity for the *other* hypothesis — how likely is it that an email is *both* not-spam *and* contains "free"?
+where `P(evidence)` normalizes across both hypotheses: `P(evidence|incident)×P(incident) + P(evidence|normal)×P(normal)`.
 
-```
-P("free" | not-spam) × P(not-spam) = 0.1 × 0.7 = 0.07
-```
+### Worked example: the incident classifier
 
-Now normalize — add both joint probabilities together to get the overall probability of seeing the word "free" at all, regardless of hypothesis:
+- Prior: `P(incident) = 0.12`, so `P(normal) = 0.88`
+- `P(evidence | incident) = 0.55` (55% of real incidents show this creep pattern)
+- `P(evidence | normal) = 0.04` (only 4% of normal minutes do)
 
-```
-P("free") = 0.15 + 0.07 = 0.22
-```
+Numerator (joint, incident-and-evidence): `0.55 × 0.12 = 0.066`
+Other joint (normal-and-evidence): `0.04 × 0.88 = 0.0352`
+Normalizer: `0.066 + 0.0352 = 0.1012`
+Posterior: `0.066 / 0.1012 ≈ 0.652 ≈ 65.2%`
 
-And finally, the posterior — the fraction of that 0.22 that came from the "spam" hypothesis:
+A 12% prior jumped to a ~65% posterior from one piece of evidence — this is precisely how a real anomaly-detection system reconciles a low base rate with a suspicious-but-not-conclusive signal, and it's exactly the pattern of reconciling conflicting readings from multiple sensors or replicas: you don't discard your prior, and you don't ignore the new reading either — you combine them, weighted by reliability.
 
-```
-P(spam | "free") = 0.15 / 0.22 ≈ 0.6818 ≈ 68.2%
-```
-
-So a prior belief of 30% jumped to a posterior belief of about 68% after a single piece of evidence — nearly doubling your confidence, even though the word "free" alone is far from proof. Feed the filter another suspicious word and it updates again from this new 68% starting point, incorporating both pieces of evidence — that's exactly how a real spam filter chains together many weak signals into a confident final probability.
-
-This is precisely the operating pattern of a distributed system reconciling conflicting signals from multiple sensors or replicas — you don't discard your prior state and trust the newest reading blindly, and you don't ignore new readings either. You combine them, weighted by how reliable each source is. Bayes' rule is the formal version of that instinct, and it underlies a huge amount of classical machine learning (and shows up again once we discuss maximum likelihood, later in this series).
+The identical mechanism, different domain — a spam filter with prior `P(spam)=0.3`, `P("free"|spam)=0.5`, `P("free"|not-spam)=0.1` — gives numerator `0.15`, other-joint `0.07`, normalizer `0.22`, posterior `0.15/0.22 ≈ 68.2%`. Same three-step arithmetic, same shape of answer: one weak signal nearly doubles a low prior. Feed either filter a second signal and it updates again from its new posterior, chaining weak evidence into a confident final call — the basis of a lot of classical ML, and it resurfaces once we cover maximum likelihood later in this series.
 
 ## Information Theory: Measuring Surprise
 
-This next part is the one to sit with, because you will hit its consequence — cross-entropy loss — in essentially every classification model you build from here on.
+This is the part to sit with — you'll hit its consequence, cross-entropy, in essentially every classifier you train from here on.
 
-Information theory starts from a deceptively simple idea: **rare events are more informative than common ones.** If I tell you "the sun rose this morning," you've learned almost nothing — you were already certain of it. If I tell you "it snowed in the Sahara today," you've learned a great deal, precisely because it was unlikely. We can turn this into a number: the "information content" (self-information) of an event with probability `p` is defined as `-log2(p)`, measured in bits. This is zero for a certain event (`p = 1`, since `log2(1) = 0`) and grows larger the less likely the event was (as `p` shrinks toward 0, `-log2(p)` grows without bound). Rare, surprising outcomes carry more bits of information than routine, expected ones.
+Information theory starts from: **rare events are more informative than common ones.** "The sun rose this morning" teaches you nothing; "it snowed in the Sahara" teaches you a lot, precisely because it was unlikely. Formalized: the self-information of an event with probability `p` is `-log2(p)` bits — zero for a certain event (`p=1`), unbounded as `p→0`.
 
-**Entropy** takes this one step further: it's the *average* amount of surprise (self-information) you'd expect from a distribution, if you sampled from it over and over — formally, `-Σ p(x) × log2(p(x))`, summed over every possible outcome `x`.
+**Entropy** is the *average* self-information a distribution produces if you sample it repeatedly: `-Σ p(x) × log2(p(x))`.
 
-### Worked example: fair coin vs. skewed coin
+### Worked example: how surprised should the classifier's own output be, at itself?
 
-**Fair coin** — `P(heads) = 0.5`, `P(tails) = 0.5`:
-
-```
-Entropy = -(0.5 × log2(0.5) + 0.5 × log2(0.5))
-        = -(0.5 × (-1) + 0.5 × (-1))
-        = -(-0.5 - 0.5)
-        = 1 bit
-```
-
-A fair coin has exactly 1 bit of entropy — the maximum possible for a two-outcome distribution, and the textbook definition of "1 bit of information." Every flip is a genuine 50/50 surprise.
-
-**Skewed coin** — `P(heads) = 0.9`, `P(tails) = 0.1`:
+Suppose one minute, before folding in evidence, your classifier's belief is a coin-flip-level `P(incident)=0.5, P(normal)=0.5`:
 
 ```
-log2(0.9) ≈ -0.152
-log2(0.1) ≈ -3.322
-
-Entropy = -(0.9 × (-0.152) + 0.1 × (-3.322))
-        = -(-0.137 - 0.332)
-        = 0.469 bits
+Entropy = -(0.5×log2(0.5) + 0.5×log2(0.5)) = -(0.5×(-1) + 0.5×(-1)) = 1 bit
 ```
 
-The skewed coin's entropy (≈0.469 bits) is under half the fair coin's (1 bit) — because most of the time you already know it'll land heads, so there's much less genuine surprise on average, even though the rare tails outcome is individually more surprising than any flip of the fair coin. Entropy captures the *average* surprise across all outcomes, weighted by how often each occurs — a distribution that's totally predictable (heads 100% of the time) drives entropy all the way to zero.
+Maximum possible entropy for two outcomes — genuine 50/50 uncertainty, the classifier has no useful signal yet.
 
-Now for the part that matters most in practice: **cross-entropy.**
-
-Suppose you have the *true* distribution of outcomes (in classification, this is usually a clean fact: this particular email really is spam, so the true distribution puts 100% on "spam" and 0% on "not-spam" — a one-hot distribution). And you have your *model's predicted* distribution. Cross-entropy measures how well your predicted distribution matches the true one — formally, `-Σ true(x) × log2(predicted(x))` — the average surprise you'd experience if you believed your model's predicted distribution, but reality kept generating outcomes according to the true distribution instead. Because the true distribution is one-hot here, every term in that sum is multiplied by 0 except the one term for the actual correct class, so the formula collapses to just `-log2(predicted probability of the correct class)`.
-
-### Worked example: cross-entropy dropping as predictions improve
-
-The true label is definitely class A: `true(A) = 1`, `true(B) = 0`.
-
-**Model 1 predicts 70% A, 30% B:**
+Now suppose after seeing metrics it's confident: `P(incident)=0.9, P(normal)=0.1`:
 
 ```
-Cross-entropy = -(1 × log2(0.7) + 0 × log2(0.3))
-              = -log2(0.7)
-              = -(-0.5146)
-              = 0.515 bits
+log2(0.9) ≈ -0.152,  log2(0.1) ≈ -3.322
+Entropy = -(0.9×(-0.152) + 0.1×(-3.322)) = -(-0.137 - 0.332) = 0.469 bits
 ```
 
-**Model 2 predicts 95% A, 5% B** (a much more confident, and correct, prediction):
+Under half the entropy of the coin-flip case — a confident classifier is, by construction, less "surprised" by its own eventual answer on average, even though *if* it turns out wrong, that outcome individually carries far more bits (`-log2(0.1) ≈ 3.32`) than any coin flip could.
 
-```
-Cross-entropy = -(1 × log2(0.95) + 0 × log2(0.05))
-              = -log2(0.95)
-              = -(-0.074)
-              = 0.074 bits
-```
+Now, **cross-entropy** — the quantity that actually trains the model. You have the *true* label (this minute really was an incident: `true(incident)=1, true(normal)=0` — one-hot) and the model's *predicted* distribution. Cross-entropy, `-Σ true(x)×log2(predicted(x))`, measures the average surprise of trusting the model's prediction while reality generates outcomes from the true label. Because the true distribution is one-hot, every term vanishes except the correct class's, collapsing the formula to `-log2(predicted probability of the correct class)`.
 
-The loss drops from 0.515 bits down to 0.074 bits — about a 7x reduction — purely because the model became more confident in the *correct* answer. This is the numeric core of "cross-entropy loss goes down as predictions improve": it isn't an abstract claim, it's this exact arithmetic, repeated across every training example, millions of times over the course of training. And the flip side is just as sharp — if a model had instead predicted only 2% for the correct class, `-log2(0.02) ≈ 5.64 bits`, a huge loss spike, because confidently betting on the wrong answer is punished far more severely than honest uncertainty ever is.
+**Before I explain further — guess:** if the true answer is "incident" and the model predicted `P(incident)=0.02` (confidently wrong), versus predicted `P(incident)=0.5` (honestly unsure) — which do you think gets penalized more heavily, and by roughly how much more?
 
-This is exactly the behavior you want out of a training signal: reward confident correctness, punish confident wrongness severely, and be gentler on honest uncertainty. That's why cross-entropy loss is the default choice for training classifiers — minimizing it is mathematically the same operation as maximizing the probability the model assigns to the correct answers across your whole training set (a principle called maximum likelihood, which we're deferring to a later lesson, but the short version is: making correct answers more probable and minimizing cross-entropy are two descriptions of the identical goal).
+### Worked example: cross-entropy as the classifier gets more confident and correct
+
+True label: this minute is an incident. `true(incident)=1`.
+
+**Model 1 predicts P(incident)=0.7:** `Cross-entropy = -log2(0.7) = 0.515 bits`
+
+**Model 2 predicts P(incident)=0.95** (more confident, still correct): `Cross-entropy = -log2(0.95) = 0.074 bits`
+
+Loss drops ~7x purely from added correct confidence — the exact arithmetic behind "cross-entropy loss goes down as predictions improve," repeated millions of times over training. The flip side answers the guess above: had the model instead predicted `P(incident)=0.02` for a true incident, `-log2(0.02) ≈ 5.64 bits` — a spike roughly 76x worse than Model 1's honest-ish guess, because confidently betting wrong is punished far harder than honest uncertainty ever is. That asymmetry — reward confident correctness, punish confident wrongness severely, go easy on honest uncertainty — is why cross-entropy is the default loss for training classifiers. Minimizing it is mathematically the same operation as maximizing the probability the model assigns to correct answers across the whole training set (maximum likelihood, deferred to a later lesson).
 
 ## KL Divergence, Briefly
 
-One closely related idea, worth a short section: **KL divergence** (Kullback-Leibler divergence) is a way to measure how different two probability distributions are from each other — how much "extra surprise" you incur by using one distribution as a stand-in for another. It's not quite a distance in the strict mathematical sense (measuring the gap from A to B isn't the same as measuring the gap from B to A), but the practical reading is simple: KL divergence is zero when two distributions are identical, and grows as they diverge. Concretely, if your model's predicted distribution ever became *exactly* the true distribution — say, predicting exactly 100% A / 0% B when the true label really is 100% A — the KL divergence between them would be exactly 0, and cross-entropy would collapse down to just the entropy of the true distribution itself (which, for a one-hot true label, is 0 bits — a certain event has zero surprise, so there's nothing left to minimize). The reason KL divergence is worth knowing by name is its relationship to cross-entropy: cross-entropy between the true distribution and your model's prediction equals the entropy of the true distribution (a fixed, unavoidable baseline of surprise) plus the KL divergence between the two distributions (the *extra* surprise caused specifically by your model's predictions being wrong). Since the true distribution's entropy doesn't change no matter what your model does, minimizing cross-entropy during training is, in effect, minimizing KL divergence — pushing your model's predicted distribution to look as close as possible to reality.
+**KL divergence** measures how different two distributions are — the "extra surprise" from using one as a stand-in for the other. Not symmetric (A-to-B ≠ B-to-A), but simple in practice: zero when identical, grows as they diverge. Key relationship: `cross-entropy = entropy of the true distribution + KL divergence between prediction and truth`. For a one-hot true label the entropy term is 0 bits, so minimizing cross-entropy during training is, in effect, minimizing KL divergence — pushing the classifier's predicted distribution to match reality as closely as possible.
 
 ## Vocabulary
 
@@ -218,21 +135,26 @@ One closely related idea, worth a short section: **KL divergence** (Kullback-Lei
 |---|---|
 | Random variable | A quantity whose value is drawn according to some set of probabilities rather than being fixed. |
 | Probability distribution | The full list (discrete) or curve (continuous) of how likely each possible value of a random variable is. |
-| PMF / PDF | Probability mass function (discrete case — direct probabilities) vs. probability density function (continuous case — probabilities come from areas under the curve). |
-| Expectation | The long-run average value of a random variable if you sampled it forever. |
-| Variance | How spread out a distribution's values typically are around the expectation — the average of the squared deviations from the mean. |
-| Bernoulli distribution | The distribution of a single yes/no event with some probability `p` of "yes" and `1-p` of "no." |
-| Gaussian (Normal) distribution | The bell curve; described by a mean (location of the peak) and a variance (width of the bell — small variance is narrow/confident, large variance is wide/uncertain); shows up naturally whenever many small independent effects sum together. |
-| Prior | Your belief about something before seeing a specific piece of new evidence. |
-| Posterior | Your updated belief after incorporating that evidence, via Bayes' rule. |
-| Self-information | A measure of how surprising a single event is, `-log2(p)`; higher for rarer events. |
-| Entropy | The average surprise you'd expect from repeatedly sampling a distribution; a measure of how unpredictable it is; 1 bit for a fair coin, less than 1 bit for any skewed coin. |
-| Cross-entropy | The average surprise of using a predicted distribution as your guide when the true distribution is actually generating the outcomes; collapses to `-log2(predicted probability of the correct class)` for one-hot labels; the standard loss function for training classifiers. |
-| KL divergence | A measure of how different one probability distribution is from another; zero when the two distributions are identical; cross-entropy = entropy of the truth + KL divergence between prediction and truth. |
+| PMF / PDF | Probability mass function (discrete — direct probabilities) vs. probability density function (continuous — probabilities come from areas under the curve). |
+| Expectation | The long-run average value of a random variable if sampled forever. |
+| Variance | How spread out a distribution's values typically are around the expectation. |
+| Bernoulli distribution | The distribution of a single yes/no event with probability `p` of "yes," `1-p` of "no" — the shape of our classifier's incident/normal output. |
+| Gaussian (Normal) distribution | The bell curve; mean = peak location, variance = width (small = confident/narrow, large = uncertain/wide); emerges from sums of many small independent effects. |
+| Prior | Belief about something before seeing a specific piece of new evidence. |
+| Posterior | Updated belief after incorporating that evidence, via Bayes' rule. |
+| Self-information | How surprising a single event is, `-log2(p)`; higher for rarer events. |
+| Entropy | The average surprise expected from repeatedly sampling a distribution; 1 bit for a coin-flip-level 50/50, less for anything skewed/confident. |
+| Cross-entropy | Average surprise of trusting a predicted distribution when the true distribution generates outcomes; `-log2(predicted probability of the correct class)` for one-hot labels; the standard classifier loss. |
+| KL divergence | How different one distribution is from another; zero when identical; cross-entropy = entropy of the truth + KL divergence between prediction and truth. |
 
 ---
 
+## Quick check
+
+Your classifier outputs `P(incident) = 0.2` for a minute that turns out to be a genuine incident. In your own words: what is the cross-entropy for that prediction (rough arithmetic is fine), and why is it so much worse than if the model had instead predicted `P(incident) = 0.2` for a minute that turned out to be *normal*?
+
 ## Where we'll go next
+
 **Lesson 4 — Numerical Computation.** Now that you know what a model is trying to minimize (cross-entropy) and what randomness is doing in training, we need to talk about the unglamorous but critical reality of doing this arithmetic on real computers — floating-point limits, numerical stability, and why some mathematically-equivalent formulas behave very differently once you actually run them.
 
-Reply **ok** to continue, or ask anything about today's lesson first.
+Answer the check above (even roughly), then reply **ok** to continue.
