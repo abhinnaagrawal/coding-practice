@@ -39,7 +39,7 @@ Personal reference site — one docsify deployment, multiple content sections. P
         └── 01-introduction.md … 06-machine-learning-basics-part2.md
 ```
 
-Adding a new section means: a new top-level folder, its own `README.md` landing page, an entry in `_sidebar.md`, and a link from this file.
+Adding a new section means: a new top-level folder, its own `README.md` landing page, an entry in `_sidebar.md`, and a link from this file. **Read [`DOCSIFY-LINKING.md`](DOCSIFY-LINKING.md) first if the new section nests more than one directory deep** — this has broken twice already.
 
 ## How it's hosted
 
