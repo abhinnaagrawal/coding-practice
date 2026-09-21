@@ -112,6 +112,9 @@
   - Networking
     - [Networking Layers](/systems-engineering/networking/networking-layers.md)
     - [gRPC](/systems-engineering/networking/grpc.md)
+  - Cloud (AWS)
+    - [AWS Networking](/systems-engineering/cloud-aws/aws-networking.md)
+    - [AWS IAM](/systems-engineering/cloud-aws/aws-iam.md)
   - Reliability
     - [Multi-AZ, DR & Failure Patterns](/systems-engineering/reliability/multi-az-dr-and-failure-patterns.md)
   - Performance

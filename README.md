@@ -10,7 +10,7 @@ Personal reference site — one docsify deployment, multiple content sections. P
 - **[Python Tutorial](/python-tutorial/README.md)** — Python in one day for C/Java/Bash engineers: 9 chapters framed as diffs against what you already know, interview-first ordering, gotcha checklists, and micro-exercises per chapter.
 - **[Numerical Methods](/numerical-methods/README.md)** — numerical methods intuition in one week: floating point, root finding, interpolation, numerical linear algebra, differentiation/integration, ODEs, and optimization, each with runnable Python and open-access deep dives.
 - **[AI & Search Systems](/ai-search-systems/README.md)** — practical reference for text processing, embeddings, HNSW, vector databases, RAG, and non-vector retrieval patterns such as BM25, graph traversal, and SQL.
-- **[Systems Engineering](/systems-engineering/README.md)** — backend/distributed-systems and data-platform reference: 16 categories (distributed systems primitives, data formats/architecture, storage, streaming, query engines, orchestration, compute, networking, reliability, performance), 45 files, each with a resource-layer map and worked examples.
+- **[Systems Engineering](/systems-engineering/README.md)** — backend/distributed-systems and data-platform reference: 17 categories (distributed systems primitives, data formats/architecture, storage, streaming, query engines, orchestration, compute, networking, cloud (AWS), reliability, performance), 47 files, each with a resource-layer map and worked examples.
 - **[Book Summaries](/book-summaries/README.md)** — lesson-style notes working through technical books.
 
 ## How this repo is structured
@@ -33,7 +33,8 @@ Personal reference site — one docsify deployment, multiple content sections. P
 │   │                            (see systems-engineering/README.md)
 │   └── distributed-systems/, data-formats/, data-architecture/, data-modeling/,
 │       data-structures/, authz/, caching/, coordination/, storage/, streaming/,
-│       query-engines/, orchestration/, compute/, networking/, reliability/, performance/
+│       query-engines/, orchestration/, compute/, networking/, cloud-aws/,
+│       reliability/, performance/
 └── book-summaries/             section: book notes (see book-summaries/README.md)
     └── deep-learning-book/
         └── 01-introduction.md … 06-machine-learning-basics-part2.md

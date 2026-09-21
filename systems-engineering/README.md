@@ -115,6 +115,13 @@ Backend/distributed-systems and data-platform reference. Each file: 30-second in
 | [networking-layers.md](/systems-engineering/networking/networking-layers.md) | TCP/IP model (link/network/transport/application), encapsulation with header sizes, TCP three-way handshake, flow control, slow start/AIMD congestion control, TCP vs UDP, HTTP/1.1 vs HTTP/2 vs HTTP/3-QUIC head-of-line blocking, TLS 1.3 handshake, DNS resolution |
 | [grpc.md](/systems-engineering/networking/grpc.md) | HTTP/2 stream multiplexing + Protobuf binary wire format, unary/streaming RPC types, protoc codegen + grpcurl walkthrough, deadline/cancellation propagation, status codes, Protobuf Editions, gRPC-Web/HTTP-3, vs REST/JSON and GraphQL |
 
+## Cloud (AWS)
+
+| File | Topics |
+|---|---|
+| [aws-networking.md](/systems-engineering/cloud-aws/aws-networking.md) | VPC/subnets/route tables, Security Groups (stateful) vs NACLs (stateless) worked example, `create-vpc`→`create-security-group` CLI walkthrough with packet traces, route table longest-prefix-match, why VPC Peering isn't transitive, Transit Gateway hub-and-spoke, Gateway vs Interface (PrivateLink) VPC endpoints, NAT Gateway vs NAT instance, regional NAT Gateway (Nov 2025) |
+| [aws-iam.md](/systems-engineering/cloud-aws/aws-iam.md) | Policy evaluation logic (explicit deny wins, allow union, default deny), identity vs resource-based policies, cross-account both-sides-must-allow asymmetry, STS AssumeRole, permission boundaries vs SCPs, IRSA vs EKS Pod Identity, vs Zanzibar/SpiceDB ReBAC |
+
 ## Reliability
 
 | File | Topics |
