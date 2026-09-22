@@ -107,6 +107,40 @@ This is the exact gap [`orchestration/argo-rollouts.md`](/systems-engineering/or
 
 ---
 
+## Tying It to AWS Networking: Where the Same Gap Shows Up Outside K8s
+
+The Kubernetes-versus-Argo-Rollouts gap above has a direct AWS-networking equivalent, one layer below Kubernetes entirely. See [`cloud-aws/aws-networking.md`](/systems-engineering/cloud-aws/aws-networking.md) for the VPC/subnet/routing layer this section builds on — this section is about L7 traffic control, one layer above that.
+
+**Two AWS primitives do weighted traffic splitting, at two different layers:**
+
+| Primitive | Layer | Splits traffic between | Granularity |
+|---|---|---|---|
+| ALB weighted target groups | L7 (HTTP), within one load balancer | Two target groups behind one ALB listener rule | Exact percentage, no DNS caching lag |
+| Route 53 weighted routing | DNS | Two distinct DNS-addressable endpoints (e.g. two separate ALBs, or two regions) | Approximate percentage — client/resolver DNS caching means the actual split lags the configured weights |
+
+The distinction matters operationally. An ALB's weighted target groups reassign traffic on the next request, because the ALB itself makes the routing decision. A Route 53 weighted record changes which IP a *resolver* hands back, and that resolver — or the client's OS, or an intermediate caching layer — may hold onto the old answer for the record's TTL. Route 53 weighted routing is the right tool for splitting traffic between two **separate, independently-addressable** stacks (two full ALBs, two regions); ALB weighted target groups are the right tool for splitting traffic between two versions **behind the same load balancer**.
+
+**Blue-green and canary have first-class AWS support outside Kubernetes entirely**, via AWS CodeDeploy:
+
+```
+ECS blue/green via CodeDeploy:
+  ALB listener ──► Target Group A (blue, live)
+                    Target Group B (green, idle)
+
+CodeDeploy shifts the LISTENER RULE'S weight from A to B,
+using a predefined schedule, e.g.:
+  CodeDeployDefault.ECSLinear10PercentEvery1Minutes
+    → 10% to green, wait 1 min, 20%, wait 1 min, ... 100%
+```
+
+- **Lambda**: CodeDeploy natively supports canary traffic shifting for Lambda aliases — a percentage of invocations route to the new version, increasing on a schedule, with automatic rollback on a CloudWatch alarm.
+- **ECS**: as of October 2025, ECS supports canary and linear deployment strategies natively, without CodeDeploy as a separate orchestrator — this is now the recommended default for new ECS deployments, though CodeDeploy-managed blue/green remains supported for existing pipelines.
+- **EKS**: none of this native ECS/CodeDeploy tooling applies. An EKS workload is back to the exact Kubernetes-layer gap described above — plain `Deployment`/`Service` gives pod-ratio approximation only, and Argo Rollouts/Flagger/Gateway API are what actually closes it.
+
+**The practical decision this creates**: a team running ECS gets canary and blue-green essentially for free from AWS-native tooling. A team running EKS does not — the same capability requires deploying and operating Argo Rollouts or Flagger themselves. This is a real, concrete cost difference between the two compute choices that rarely shows up in a compute-cost comparison, because it is an operational-tooling cost, not a compute-cost line item.
+
+---
+
 ## A/B Testing: Same Mechanism, Different Goal
 
 **What it is**: split traffic between two versions using the identical mechanism as canary — weighted routing, header/cookie-based targeting — but the goal is measuring a difference in user behavior, not verifying safety before a full rollout.
@@ -171,7 +205,9 @@ The practical value: a bad rollback becomes flipping a flag (seconds) instead of
 - **Pod-ratio canary is not the same signal as a real canary analysis.** Scaling 1 new pod alongside 9 old ones is not "10% of traffic is being safety-checked" — it is 10% of traffic with no metrics evaluation attached, unless an `AnalysisTemplate` (Argo Rollouts) or metric check (Flagger) is actually wired in. Traffic going somewhere is not the same as traffic being watched.
 - **Shadow traffic doubles compute cost for the mirrored path**, since both versions process every mirrored request even though only one response reaches the user — budget for this before turning on mirroring at full production volume.
 - **Feature flags left in code after their rollout is done accumulate as technical debt.** A flag that decoupled a risky release six months ago and was never removed is now permanent branching complexity with no remaining purpose.
+- **Route 53 weighted routing lags its configured weights because of DNS caching, ALB weighted target groups do not.** A canary using Route 53 weights can see a much slower or lumpier actual traffic ramp than the configured percentages suggest, because resolvers and clients hold onto answers for the record's TTL — this is invisible until someone checks actual request logs against the configured weight and finds them mismatched.
+- **EKS gets none of ECS's native canary/blue-green tooling.** A team moving a workload from ECS to EKS (or comparing the two) needs to budget for standing up Argo Rollouts or Flagger themselves — this is a real operational cost that a pure compute-cost comparison between the two will not surface.
 
 ---
 
-*Grounded against kubernetes.io's Deployment documentation, the Gateway API's HTTPRoute traffic-splitting guide, and 2026 community comparisons of Flagger and Argo Rollouts (both confirmed shipping actively maintained releases — Flagger v1.44.0 and Argo Rollouts v1.9.1 — three days apart in July 2026), as of September 2026. Gateway API's weighted-backend traffic splitting is documented and in active use in 2026 sources; its formal GA/stable designation was not independently confirmed against the Gateway API project's own release notes and should be re-checked before citing a specific stability level externally.*
+*Grounded against kubernetes.io's Deployment documentation, the Gateway API's HTTPRoute traffic-splitting guide, AWS's own CodeDeploy/ECS/Route 53/ALB documentation, and 2026 community comparisons of Flagger and Argo Rollouts (both confirmed shipping actively maintained releases — Flagger v1.44.0 and Argo Rollouts v1.9.1 — three days apart in July 2026), as of September 2026. ECS-native canary/linear deployment support (October 2025) and Route 53-vs-ALB weighted-routing mechanics are both confirmed against current AWS documentation. Gateway API's weighted-backend traffic splitting is documented and in active use in 2026 sources; its formal GA/stable designation was not independently confirmed against the Gateway API project's own release notes and should be re-checked before citing a specific stability level externally.*

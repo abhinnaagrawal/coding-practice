@@ -98,7 +98,7 @@ Backend/distributed-systems and data-platform reference. Each file: 30-second in
 | [keda.md](/systems-engineering/orchestration/keda.md) | Scale-to-zero, ScaledObject/ScaledJob, Kafka/SQS/Prometheus scalers, IRSA auth |
 | [karpenter.md](/systems-engineering/orchestration/karpenter.md) | NodePool/EC2NodeClass, vs Cluster Autoscaler, consolidation, KEDA+Karpenter pattern |
 | [cluster-schedulers.md](/systems-engineering/orchestration/cluster-schedulers.md) | kube-scheduler filter/score plugin framework, requests vs limits, taints/topology spread, gang-scheduling gap (Kueue/Volcano/coscheduling), vs YARN, Mesos retirement (Oct 2025) |
-| [deployment-strategies.md](/systems-engineering/orchestration/deployment-strategies.md) | Recreate/Rolling Update (maxSurge/maxUnavailable worked example), Blue-Green, Canary, A/B, Shadow launch, Feature flags — where native K8s stops and Argo Rollouts/Flagger/Gateway API start |
+| [deployment-strategies.md](/systems-engineering/orchestration/deployment-strategies.md) | Recreate/Rolling Update (maxSurge/maxUnavailable worked example), Blue-Green, Canary, A/B, Shadow launch, Feature flags — where native K8s stops and Argo Rollouts/Flagger/Gateway API start, tied to AWS ALB/Route 53/CodeDeploy/ECS-native equivalents |
 
 ## Compute
 
