@@ -104,6 +104,7 @@
     - [KEDA](/systems-engineering/orchestration/keda.md)
     - [Karpenter](/systems-engineering/orchestration/karpenter.md)
     - [Cluster Schedulers](/systems-engineering/orchestration/cluster-schedulers.md)
+    - [Deployment Strategies](/systems-engineering/orchestration/deployment-strategies.md)
   - Compute
     - [Spark](/systems-engineering/compute/spark.md)
     - [Spark on EKS](/systems-engineering/compute/spark-on-eks.md)
