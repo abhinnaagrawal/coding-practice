@@ -40,8 +40,8 @@ The other seven layers are each one specific way of avoiding this cost.
 **The crux**: serving 10,000+ concurrent connections with one thread per connection fails. Thread stacks and context-switch overhead scale linearly with connection count. Most connections are idle at any instant, so that overhead is wasted. The fix is an event loop over I/O multiplexing (`epoll`/`kqueue`): one thread asks the kernel which sockets have work, and acts only on those.
 
 Already in this KB:
-- [`caching/redis-vs-memcached.md`](../caching/redis-vs-memcached.md) — Redis's `ae` event loop, with `epoll_wait()` mechanics and `redis-cli CONFIG GET io-threads` showing the single-thread ceiling before I/O threads are needed.
-- [`networking/networking-layers.md`](../networking/networking-layers.md) — the protocol layer (HTTP/1.1 vs 2 vs 3 multiplexing) that event-loop servers typically serve.
+- [`caching/redis-vs-memcached.md`](/systems-engineering/caching/redis-vs-memcached.md) — Redis's `ae` event loop, with `epoll_wait()` mechanics and `redis-cli CONFIG GET io-threads` showing the single-thread ceiling before I/O threads are needed.
+- [`networking/networking-layers.md`](/systems-engineering/networking/networking-layers.md) — the protocol layer (HTTP/1.1 vs 2 vs 3 multiplexing) that event-loop servers typically serve.
 
 **2026 update — io_uring**: epoll still costs one syscall per readiness check plus one per read/write. io_uring lets a thread submit many I/O operations into a shared ring buffer and collect many completions in one syscall. Benchmarks show `SQPOLL` mode cutting syscall counts by roughly 80% versus epoll at high connection counts. Per-operation cost drops below 10ns on modern CPUs.
 
@@ -59,9 +59,9 @@ Already in this KB:
 **The crux**: a CPU cache miss costs roughly 100-300x a cache hit, in cycles. Row-at-a-time processing jumps across memory and misses the cache constantly. Columnar processing touches one contiguous run of values and hits the cache far more often. That single fact is why every fast analytical engine in this KB is columnar and batch-oriented.
 
 Already in this KB:
-- [`query-engines/duckdb.md`](../query-engines/duckdb.md) — vectorized execution in 2048-row SIMD-friendly batches; `EXPLAIN ANALYZE` output shows the machinery directly.
-- [`compute/spark.md`](../compute/spark.md) — whole-stage codegen, the same goal (cut per-row overhead) reached a different way: compile a whole stage into one function instead of batching.
-- [`query-engines/clickhouse.md`](../query-engines/clickhouse.md) — granule-based columnar storage, the on-disk half of the same idea.
+- [`query-engines/duckdb.md`](/systems-engineering/query-engines/duckdb.md) — vectorized execution in 2048-row SIMD-friendly batches; `EXPLAIN ANALYZE` output shows the machinery directly.
+- [`compute/spark.md`](/systems-engineering/compute/spark.md) — whole-stage codegen, the same goal (cut per-row overhead) reached a different way: compile a whole stage into one function instead of batching.
+- [`query-engines/clickhouse.md`](/systems-engineering/query-engines/clickhouse.md) — granule-based columnar storage, the on-disk half of the same idea.
 
 **False sharing**: two threads on different cores mutate different variables that happen to sit on the same cache line. Every write forces a cache-line invalidation on the other core, even though the threads touch no shared data logically. This is why lock-free and sharded data structures pad hot fields to their own cache line. It is an easy bug to hit in any concurrent design — Cassandra's per-partition state and Redis's I/O threads are both concurrency-heavy enough to be at risk.
 
@@ -79,8 +79,8 @@ Explicit read call per access          Page fault on first touch, transparent af
 ```
 
 Already in this KB:
-- [`coordination/etcd.md`](../coordination/etcd.md) — boltdb's B+tree pages are memory-mapped; the memory row describes accessing them "via boltdb's mmap'd pages," not an explicit read.
-- [`storage/postgres.md`](../storage/postgres.md) — `shared_buffers` sits on top of, not instead of, the OS page cache. Two independent caching layers stacked on each other is a real tuning trap, covered as its own gotcha there.
+- [`coordination/etcd.md`](/systems-engineering/coordination/etcd.md) — boltdb's B+tree pages are memory-mapped; the memory row describes accessing them "via boltdb's mmap'd pages," not an explicit read.
+- [`storage/postgres.md`](/systems-engineering/storage/postgres.md) — `shared_buffers` sits on top of, not instead of, the OS page cache. Two independent caching layers stacked on each other is a real tuning trap, covered as its own gotcha there.
 
 **TLB misses**: every virtual-to-physical address translation should hit a small on-CPU cache, the TLB. A miss means walking page tables, which is slow — the memory-layer equivalent of a cache miss. Huge pages (2MB/1GB instead of 4KB) reduce the TLB entry count needed to cover a given amount of memory, which lowers the miss rate for large in-memory datasets like DuckDB's buffer pool or Redis's dataset.
 
@@ -91,9 +91,9 @@ Already in this KB:
 **The crux**: the OS page cache holds recently-read/written file blocks in RAM. It is the actual hot-data buffer underneath most "in-memory-fast" claims for anything touching disk. An application with no cache of its own can still be fast because the OS is caching its files. An application with its own cache is managing memory alongside a second cache it does not fully control.
 
 Already in this KB:
-- [`streaming/kafka.md`](../streaming/kafka.md) — a caught-up Kafka cluster does almost no disk I/O because the OS page cache serves reads, not JVM heap. The doc's `strace`/JMX output shows `sendfile()` moving bytes from page cache to socket, and `BytesOutPerSec` staying high while disk reads stay near zero.
-- [`storage/postgres.md`](../storage/postgres.md) — `shared_buffers` competing with the OS page cache for the same RAM.
-- [`query-engines/duckdb.md`](../query-engines/duckdb.md) — DuckDB's own buffer pool, a deliberate choice to manage cache explicitly rather than rely on the OS page cache alone.
+- [`streaming/kafka.md`](/systems-engineering/streaming/kafka.md) — a caught-up Kafka cluster does almost no disk I/O because the OS page cache serves reads, not JVM heap. The doc's `strace`/JMX output shows `sendfile()` moving bytes from page cache to socket, and `BytesOutPerSec` staying high while disk reads stay near zero.
+- [`storage/postgres.md`](/systems-engineering/storage/postgres.md) — `shared_buffers` competing with the OS page cache for the same RAM.
+- [`query-engines/duckdb.md`](/systems-engineering/query-engines/duckdb.md) — DuckDB's own buffer pool, a deliberate choice to manage cache explicitly rather than rely on the OS page cache alone.
 
 **Zero-copy**: `sendfile()` works because the page cache already holds the data. It is not "copy the data faster" — the data never leaves the kernel, because the kernel already has it and can hand it straight to the network stack. This connects three layers: Layer 1 (skip the user/kernel boundary), Layer 5 (the page cache holds the data), and Layer 7 (the network stack receives it).
 
@@ -105,12 +105,12 @@ Already in this KB:
 
 | System | LSM role | KB doc |
 |---|---|---|
-| Generic mechanism | memtable → sequential SSTable flush → background compaction | [`data-structures/lsm-trees.md`](../data-structures/lsm-trees.md) |
-| RocksDB | Concrete single-node implementation | [`data-structures/rocksdb.md`](../data-structures/rocksdb.md) |
-| Cassandra | Same tradeoff at the distributed-systems level — write throughput over read-time cost | [`storage/cassandra.md`](../storage/cassandra.md) |
-| Postgres | The opposite design: in-place heap plus vacuum, pay for reorganization immediately instead of deferring it | [`storage/postgres.md`](../storage/postgres.md) |
+| Generic mechanism | memtable → sequential SSTable flush → background compaction | [`data-structures/lsm-trees.md`](/systems-engineering/data-structures/lsm-trees.md) |
+| RocksDB | Concrete single-node implementation | [`data-structures/rocksdb.md`](/systems-engineering/data-structures/rocksdb.md) |
+| Cassandra | Same tradeoff at the distributed-systems level — write throughput over read-time cost | [`storage/cassandra.md`](/systems-engineering/storage/cassandra.md) |
+| Postgres | The opposite design: in-place heap plus vacuum, pay for reorganization immediately instead of deferring it | [`storage/postgres.md`](/systems-engineering/storage/postgres.md) |
 
-**2026 relevance**: NVMe's higher IOPS ceiling and lower per-request latency changed what "spill to disk" means. [`query-engines/trino.md`](../query-engines/trino.md) is fully in-memory with no durability by default, but its Fault-Tolerant Execution can spill to local NVMe as a real fallback path, not a last resort.
+**2026 relevance**: NVMe's higher IOPS ceiling and lower per-request latency changed what "spill to disk" means. [`query-engines/trino.md`](/systems-engineering/query-engines/trino.md) is fully in-memory with no durability by default, but its Fault-Tolerant Execution can spill to local NVMe as a real fallback path, not a last resort.
 
 ---
 
@@ -131,8 +131,8 @@ io_uring (the newer approach):
 ```
 
 Already in this KB:
-- [`networking/networking-layers.md`](../networking/networking-layers.md) — the protocol layer above this one (TCP handshake, congestion control, HTTP/1.1 vs 2 vs 3).
-- [`streaming/kafka.md`](../streaming/kafka.md) — `sendfile()` is a narrower, older version of the same instinct: make one syscall do more than a naive read+write pair.
+- [`networking/networking-layers.md`](/systems-engineering/networking/networking-layers.md) — the protocol layer above this one (TCP handshake, congestion control, HTTP/1.1 vs 2 vs 3).
+- [`streaming/kafka.md`](/systems-engineering/streaming/kafka.md) — `sendfile()` is a narrower, older version of the same instinct: make one syscall do more than a naive read+write pair.
 
 **2026 status**: io_uring has a broad Linux surface for storage and networking on the 6.19/7.0 kernel line. Production adopters include Postgres and MySQL (experimental async I/O) and some high-throughput KV stores. It delivers roughly 80%+ of SPDK's IOPS without SPDK's operational burden, but it is Linux-only, needs a recent kernel, and most production users keep an epoll fallback path. Epoll is still the default; io_uring is an upgrade for a proven syscall-bound bottleneck.
 
@@ -152,7 +152,7 @@ Already in this KB:
 Firecracker, the technology under AWS Lambda and Fargate, sits in the microVM row: real per-tenant kernel isolation at near-container speed.
 
 Already in this KB, one level up:
-- [`orchestration/karpenter.md`](../orchestration/karpenter.md) and [`compute/spark-on-eks.md`](../compute/spark-on-eks.md) schedule containers/pods onto nodes. They do not decide the isolation boundary those containers run inside — this layer is what sits underneath that scheduling decision.
+- [`orchestration/karpenter.md`](/systems-engineering/orchestration/karpenter.md) and [`compute/spark-on-eks.md`](/systems-engineering/compute/spark-on-eks.md) schedule containers/pods onto nodes. They do not decide the isolation boundary those containers run inside — this layer is what sits underneath that scheduling decision.
 
 **2026 example**: AWS Lambda's MicroVMs feature (mid-2026, for running user- or AI-generated code) chose Firecracker isolation over standard containers because the workload — arbitrary, potentially adversarial code — needed a stronger boundary than cgroups+namespaces provide.
 
