@@ -34,6 +34,8 @@ Backend/distributed-systems and data-platform reference. Each file: 30-second in
 | File | Topics |
 |---|---|
 | [star-schema-dimensional-modeling.md](/systems-engineering/data-modeling/star-schema-dimensional-modeling.md) | Kimball fact/dimension split, star vs snowflake, grain, SCD Type 0-2 worked example, OBT vs star on columnar warehouses, Data Vault comparison |
+| [oltp-normalization-and-er-modeling.md](/systems-engineering/data-modeling/oltp-normalization-and-er-modeling.md) | ER modeling (entities/attributes/cardinality), N:M junction tables, 1NF-3NF/BCNF worked anomalies, surrogate vs natural keys, deliberate denormalization tradeoffs, normalization vs indexing |
+| [data-modeling-interview-playbook.md](/systems-engineering/data-modeling/data-modeling-interview-playbook.md) | 13 worked interview questions (OLTP schema design + OLAP/dimensional), each with a full schema and "what's being evaluated," plus a 5-step answer framework |
 
 ## Data Structures
 

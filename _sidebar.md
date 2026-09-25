@@ -72,6 +72,8 @@
     - [Data Platform Architectures](/systems-engineering/data-architecture/data-platform-architectures.md)
   - Data Modeling
     - [Star Schema & Dimensional Modeling](/systems-engineering/data-modeling/star-schema-dimensional-modeling.md)
+    - [OLTP Normalization & ER Modeling](/systems-engineering/data-modeling/oltp-normalization-and-er-modeling.md)
+    - [Data Modeling Interview Playbook](/systems-engineering/data-modeling/data-modeling-interview-playbook.md)
   - Data Structures
     - [LSM Trees](/systems-engineering/data-structures/lsm-trees.md)
     - [RocksDB](/systems-engineering/data-structures/rocksdb.md)
